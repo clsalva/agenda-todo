@@ -1,0 +1,20 @@
+{
+  "name": "Agenda Todo PWA",
+  "short_name": "AgendaTodo",
+  "description": "Agenda appuntamenti e todo list installabile con supporto offline e notifiche.",
+  "start_url": "./agenda-todo-pwa.html",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "background_color": "#eef2f8",
+  "theme_color": "#0a84ff",
+  "orientation": "portrait-primary",
+  "prefer_related_applications": false,
+  "icons": [
+    {"src":"./icon-192.png","sizes":"192x192","type":"image/png","purpose":"any maskable"},
+    {"src":"./icon-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}
+  ],
+  "screenshots": [
+    {"src":"./screenshot-mobile.png","sizes":"1170x2532","type":"image/png","form_factor":"narrow","label":"Vista mobile agenda e todo"}
+  ]
+}
