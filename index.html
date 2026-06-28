@@ -45,11 +45,23 @@
     <div class="status"><span>9:41</span><span id="statusDate">Sab 27 giu</span></div>
     <header class="topbar">
       <div class="row">
-        <div class="stack"><div class="eyebrow">K TODO LIST v0.3</div><h1 id="screenTitle">Oggi</h1><p class="small" id="screenSubtitle">Agenda offline con notifiche e installazione</p></div>
+        <div class="stack"><div class="eyebrow">K TODO LIST v0.4</div><h1 id="screenTitle">Oggi</h1><p class="small" id="screenSubtitle">Agenda offline con notifiche e installazione</p></div>
         <div class="row">
           <button class="icon-btn" id="themeToggle" aria-label="Tema">◐</button>
           <button class="icon-btn" id="exportBtn" aria-label="Esporta">⇩</button>
            <button class="icon-btn" id="manualUpdateBtn" aria-label="Aggiorna app">⟳</button>
+          <div class="card notify-banner hidden" id="updateBanner">
+  <div>
+    <h2>Nuova versione disponibile</h2>
+    <p class="small">
+      Tocca Aggiorna per ricaricare l’app con l’ultima versione.
+    </p>
+  </div>
+  <div class="banner-actions">
+    <button class="action primary" id="updateNowBtn">Aggiorna</button>
+    <button class="action" id="dismissUpdateBtn">Più tardi</button>
+  </div>
+</div>
         </div>
       </div>
       <div class="card install-banner" id="installBanner"><div><h2>Installa l’app</h2><p class="small">Aggiungila alla home screen per usarla come app separata.[page:2]</p></div><div class="banner-actions"><button class="action primary" id="installBtn">Installa</button><button class="action" id="dismissInstall">Dopo</button></div></div>
@@ -135,57 +147,64 @@ async function registerSWWithUpdateUI() {
 
   const registration = await navigator.serviceWorker.register('./service-worker.js');
 
+  // prova subito a vedere se ci sono update
   if (navigator.serviceWorker.controller) {
-    registration.update(); // controlla subito se ci sono update
+    registration.update(); // controlla nuova versione dal server[web:135][web:109]
   }
 
-  const updateButton = document.getElementById('manualUpdateBtn');
+  const updateBanner = document.getElementById('updateBanner');
+  const updateNowBtn = document.getElementById('updateNowBtn');
+  const dismissUpdateBtn = document.getElementById('dismissUpdateBtn');
 
   function showUpdateBanner(worker) {
-    const shouldReload = confirm(
-      'Nuova versione disponibile. Vuoi aggiornare ora?'
-    );
-    if (shouldReload && worker) {
-      // dice al nuovo SW di saltare la waiting
-      worker.postMessage({ type: 'SKIP_WAITING' });
+    if (!updateBanner) {
+      // fallback: confirm
+      const confirmReload = confirm('Nuova versione disponibile. Vuoi aggiornare ora?');
+      if (confirmReload && worker) {
+        worker.postMessage({ type: 'SKIP_WAITING' });
+      }
+      return;
+    }
+    updateBanner.classList.remove('hidden');
+    updateBanner.classList.add('show');
+
+    if (updateNowBtn) {
+      updateNowBtn.onclick = () => {
+        updateBanner.classList.add('hidden');
+        updateBanner.classList.remove('show');
+        // dice al nuovo SW di attivarsi subito
+        worker.postMessage({ type: 'SKIP_WAITING' });
+      };
+    }
+
+    if (dismissUpdateBtn) {
+      dismissUpdateBtn.onclick = () => {
+        updateBanner.classList.add('hidden');
+        updateBanner.classList.remove('show');
+      };
     }
   }
 
+  // quando c’è un nuovo SW (updatefound)
   registration.addEventListener('updatefound', () => {
     const newWorker = registration.installing;
     if (!newWorker) return;
 
     newWorker.addEventListener('statechange', () => {
-      if (
-        newWorker.state === 'installed' &&
-        navigator.serviceWorker.controller
-      ) {
+      if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+        // abbiamo un nuovo SW in attesa: mostra banner di update
         showUpdateBanner(newWorker);
       }
     });
   });
 
-  // quando il controller cambia, ricarica la pagina
+  // quando cambia il controller, ricarica la PWA
   let refreshing = false;
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     if (refreshing) return;
     refreshing = true;
     window.location.reload();
   });
-
-  // collegamento del pulsante "Aggiorna app"
-  if (updateButton) {
-    updateButton.addEventListener('click', async () => {
-      try {
-        // tenta di aggiornare il service worker
-        await registration.update(); // controlla dal server senza cache[web:135][web:109]
-        alert('Se c’è una nuova versione, ti verrà chiesto di aggiornare.');
-      } catch (e) {
-        console.error(e);
-        alert('Aggiornamento non riuscito.');
-      }
-    });
-  }
 }
 
 registerSWWithUpdateUI();
