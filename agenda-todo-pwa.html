@@ -129,13 +129,51 @@
       function priorityBadge(p){ return p==='alta'?['Alta','red']:p==='media'?['Media','orange']:['Bassa','blue']; }
       function rootTheme(){ document.documentElement.setAttribute('data-theme', state.theme); }
 
-      async function registerSW(){
-        if(!('serviceWorker' in navigator)) return;
-        try{
-          swReg = await navigator.serviceWorker.register('./service-worker.js');
-          toast('PWA pronta offline');
-        } catch(e){ console.error(e); }
+async function registerSWWithUpdateUI() {
+  if (!('serviceWorker' in navigator)) return;
+
+  const registration = await navigator.serviceWorker.register('./service-worker.js');
+
+  // prova a forzare una verifica immediata di aggiornamenti
+  if (navigator.serviceWorker.controller) {
+    registration.update();
+  }
+
+  function showUpdateBanner(worker) {
+    const shouldReload = confirm(
+      'Nuova versione disponibile. Vuoi aggiornare ora?'
+    );
+    if (shouldReload && worker) {
+      worker.postMessage({ type: 'SKIP_WAITING' });
+    }
+  }
+
+  // ascolta quando arriva un nuovo SW (updatefound)
+  registration.addEventListener('updatefound', () => {
+    const newWorker = registration.installing;
+    if (!newWorker) return;
+
+    newWorker.addEventListener('statechange', () => {
+      if (
+        newWorker.state === 'installed' &&
+        navigator.serviceWorker.controller
+      ) {
+        // c’è un nuovo SW pronto che sostituirà quello attuale
+        showUpdateBanner(newWorker);
       }
+    });
+  });
+
+  // quando il controller cambia, ricarica la pagina
+  let refreshing = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (refreshing) return;
+    refreshing = true;
+    window.location.reload();
+  });
+}
+
+registerSWWithUpdateUI();
 
       function renderHeader(){
         rootTheme();
