@@ -135,21 +135,22 @@ async function registerSWWithUpdateUI() {
 
   const registration = await navigator.serviceWorker.register('./service-worker.js');
 
-  // prova a forzare una verifica immediata di aggiornamenti
   if (navigator.serviceWorker.controller) {
-    registration.update();
+    registration.update(); // controlla subito se ci sono update
   }
+
+  const updateButton = document.getElementById('manualUpdateBtn');
 
   function showUpdateBanner(worker) {
     const shouldReload = confirm(
       'Nuova versione disponibile. Vuoi aggiornare ora?'
     );
     if (shouldReload && worker) {
+      // dice al nuovo SW di saltare la waiting
       worker.postMessage({ type: 'SKIP_WAITING' });
     }
   }
 
-  // ascolta quando arriva un nuovo SW (updatefound)
   registration.addEventListener('updatefound', () => {
     const newWorker = registration.installing;
     if (!newWorker) return;
@@ -159,7 +160,6 @@ async function registerSWWithUpdateUI() {
         newWorker.state === 'installed' &&
         navigator.serviceWorker.controller
       ) {
-        // c’è un nuovo SW pronto che sostituirà quello attuale
         showUpdateBanner(newWorker);
       }
     });
@@ -172,6 +172,20 @@ async function registerSWWithUpdateUI() {
     refreshing = true;
     window.location.reload();
   });
+
+  // collegamento del pulsante "Aggiorna app"
+  if (updateButton) {
+    updateButton.addEventListener('click', async () => {
+      try {
+        // tenta di aggiornare il service worker
+        await registration.update(); // controlla dal server senza cache[web:135][web:109]
+        alert('Se c’è una nuova versione, ti verrà chiesto di aggiornare.');
+      } catch (e) {
+        console.error(e);
+        alert('Aggiornamento non riuscito.');
+      }
+    });
+  }
 }
 
 registerSWWithUpdateUI();
