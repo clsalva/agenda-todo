@@ -45,11 +45,23 @@
     <div class="status"><span>9:41</span><span id="statusDate">Sab 27 giu</span></div>
     <header class="topbar">
       <div class="row">
-        <div class="stack"><div class="eyebrow">K TODO LIST v0.5 PWA</div><h1 id="screenTitle">Oggi</h1><p class="small" id="screenSubtitle">Agenda offline con notifiche e installazione</p></div>
+        <div class="stack"><div class="eyebrow">K TODO LIST v0.5</div><h1 id="screenTitle">Oggi</h1><p class="small" id="screenSubtitle">Agenda offline con notifiche e installazione</p></div>
         <div class="row">
           <button class="icon-btn" id="themeToggle" aria-label="Tema">◐</button>
           <button class="icon-btn" id="exportBtn" aria-label="Esporta">⇩</button>
            <button class="icon-btn" id="manualUpdateBtn" aria-label="Aggiorna app">⟳</button>
+          <div class="card notify-banner hidden" id="updateBanner">
+  <div>
+    <h2>Nuova versione disponibile</h2>
+    <p class="small">
+      Tocca Aggiorna per ricaricare l’app con l’ultima versione.
+    </p>
+  </div>
+  <div class="banner-actions">
+    <button class="action primary" id="updateNowBtn">Aggiorna</button>
+    <button class="action" id="dismissUpdateBtn">Più tardi</button>
+  </div>
+</div>
         </div>
       </div>
       <div class="card install-banner" id="installBanner"><div><h2>Installa l’app</h2><p class="small">Aggiungila alla home screen per usarla come app separata.[page:2]</p></div><div class="banner-actions"><button class="action primary" id="installBtn">Installa</button><button class="action" id="dismissInstall">Dopo</button></div></div>
@@ -135,37 +147,58 @@ async function registerSWWithUpdateUI() {
 
   const registration = await navigator.serviceWorker.register('./service-worker.js');
   swReg = registration;
-  // prova a forzare una verifica immediata di aggiornamenti
+  // prova subito a vedere se ci sono update
   if (navigator.serviceWorker.controller) {
-    registration.update();
+    registration.update(); // controlla nuova versione dal server[web:135][web:109]
   }
 
+  const updateBanner = document.getElementById('updateBanner');
+  const updateNowBtn = document.getElementById('updateNowBtn');
+  const dismissUpdateBtn = document.getElementById('dismissUpdateBtn');
+
   function showUpdateBanner(worker) {
-    const shouldReload = confirm(
-      'Nuova versione disponibile. Vuoi aggiornare ora?'
-    );
-    if (shouldReload && worker) {
-      worker.postMessage({ type: 'SKIP_WAITING' });
+    if (!updateBanner) {
+      // fallback: confirm
+      const confirmReload = confirm('Nuova versione disponibile. Vuoi aggiornare ora?');
+      if (confirmReload && worker) {
+        worker.postMessage({ type: 'SKIP_WAITING' });
+      }
+      return;
+    }
+    updateBanner.classList.remove('hidden');
+    updateBanner.classList.add('show');
+
+    if (updateNowBtn) {
+      updateNowBtn.onclick = () => {
+        updateBanner.classList.add('hidden');
+        updateBanner.classList.remove('show');
+        // dice al nuovo SW di attivarsi subito
+        worker.postMessage({ type: 'SKIP_WAITING' });
+      };
+    }
+
+    if (dismissUpdateBtn) {
+      dismissUpdateBtn.onclick = () => {
+        updateBanner.classList.add('hidden');
+        updateBanner.classList.remove('show');
+      };
     }
   }
 
-  // ascolta quando arriva un nuovo SW (updatefound)
+  // quando c’è un nuovo SW (updatefound)
   registration.addEventListener('updatefound', () => {
     const newWorker = registration.installing;
     if (!newWorker) return;
 
     newWorker.addEventListener('statechange', () => {
-      if (
-        newWorker.state === 'installed' &&
-        navigator.serviceWorker.controller
-      ) {
-        // c’è un nuovo SW pronto che sostituirà quello attuale
+      if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+        // abbiamo un nuovo SW in attesa: mostra banner di update
         showUpdateBanner(newWorker);
       }
     });
   });
 
-  // quando il controller cambia, ricarica la pagina
+  // quando cambia il controller, ricarica la PWA
   let refreshing = false;
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     if (refreshing) return;
@@ -256,6 +289,7 @@ registerSWWithUpdateUI();
       function exportData(){ const payload = JSON.stringify({ appointments: state.appointments, tasks: state.tasks, pushConfig: state.pushConfig, exportedAt: new Date().toISOString() }, null, 2); const blob = new Blob([payload],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`agenda-pwa-backup-${todayISO}.json`; a.click(); URL.revokeObjectURL(a.href); toast('Backup esportato'); }
       function importData(){ try{ const parsed=JSON.parse(els.importArea.value.trim()); state.appointments = Array.isArray(parsed.appointments)?parsed.appointments:[]; state.tasks = Array.isArray(parsed.tasks)?parsed.tasks:[]; if(parsed.pushConfig) state.pushConfig = { ...state.pushConfig, ...parsed.pushConfig }; closeImport(); renderAll(); toast('Backup importato'); } catch { toast('JSON non valido'); } }
 
+      //SUBSCRIBE TO PUSH
 async function subscribeToPush(){
   if(!swReg) return toast('Service worker non pronto');
 
@@ -298,10 +332,7 @@ async function subscribeToPush(){
     const response = await fetch(endpoint,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({
-        subscription,
-        userAgent: navigator.userAgent
-      })
+      body: JSON.stringify(subscription)   
     });
 
     if(!response.ok) throw new Error('Subscribe endpoint error');
@@ -313,7 +344,7 @@ async function subscribeToPush(){
     toast('Push remoto non completato');
   }
 }
-
+      
       (function () {
   // seleziona gli span nella barra di stato
   const statusBar = document.querySelector('.status');
