@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v5';
+const CACHE_VERSION = 'v6';
 const CACHE_NAME = `agenda-todo-pwa-${CACHE_VERSION}`;
 const APP_SHELL = [
   './',
