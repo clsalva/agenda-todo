@@ -45,7 +45,7 @@
     <div class="status"><span>9:41</span><span id="statusDate">Sab 27 giu</span></div>
     <header class="topbar">
       <div class="row">
-        <div class="stack"><div class="eyebrow">K TODO LIST v0.1</div><h1 id="screenTitle">Oggi</h1><p class="small" id="screenSubtitle">Agenda offline con notifiche e installazione</p></div>
+        <div class="stack"><div class="eyebrow">K TODO LIST v0.2</div><h1 id="screenTitle">Oggi</h1><p class="small" id="screenSubtitle">Agenda offline con notifiche e installazione</p></div>
         <div class="row">
           <button class="icon-btn" id="themeToggle" aria-label="Tema">◐</button>
           <button class="icon-btn" id="exportBtn" aria-label="Esporta">⇩</button>
@@ -276,6 +276,46 @@ registerSWWithUpdateUI();
         }
       }
 
+      (function () {
+  // seleziona gli span nella barra di stato
+  const statusBar = document.querySelector('.status');
+  if (!statusBar) return;
+
+  const timeEl = statusBar.querySelector('span:first-child');
+  const dateEl = document.getElementById('statusDate');
+
+  if (!timeEl || !dateEl) return;
+
+  function updateStatusTime() {
+    const now = new Date();
+
+    // orario HH:mm nel fuso del device
+    const timeStr = now.toLocaleTimeString('it-IT', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    // es. "Dom 28 giu" nel fuso del device
+    const dateStr = now.toLocaleDateString('it-IT', {
+      weekday: 'short',
+      day: '2-digit',
+      month: 'short'
+    });
+
+    timeEl.textContent = timeStr;
+    dateEl.textContent = dateStr;
+  }
+
+  // aggiorna subito all’apertura
+  updateStatusTime();
+
+  // aggiorna ogni 30 secondi
+  setInterval(updateStatusTime, 30 * 1000);
+
+  // opzionale: aggiorna anche quando riattivi la tab/app
+  window.addEventListener('focus', updateStatusTime);
+})();
+      
       function urlBase64ToUint8Array(base64String){ const padding='='.repeat((4-base64String.length%4)%4); const base64=(base64String+padding).replace(/-/g,'+').replace(/_/g,'/'); const rawData=atob(base64); return Uint8Array.from([...rawData].map(char=>char.charCodeAt(0))); }
 
       $('#themeToggle').addEventListener('click',()=>{ state.theme = state.theme==='dark'?'light':'dark'; renderAll(); });
