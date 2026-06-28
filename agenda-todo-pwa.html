@@ -267,21 +267,17 @@ async function subscribeToPush(){
     }
   }
 
-  // 2. Public VAPID key: qui metti quella che hai configurato su Railway
+  // 2. Public VAPID key fissa (la tua)
   const publicKey = 'BE5ldK1ZSu_1vnXCtrWiBmotgztJ1PfpdPWEyhXiNS8uYvE3DoTvWIKgOZaVzKHGEU32_eNGuUeZzaK3D2kWL4U';
 
-  // 3. Endpoint backend fisso su Railway (puoi adattare il dominio)
-  const endpoint = 'https://agenda-push-backend.up.railway.app/subscribe';
-
-  // Se vuoi lasciare comunque la possibilità di sovrascrivere da UI:
-  // const publicKey = (els.vapidKeyInput.value || state.pushConfig.publicKey || 'BD...').trim();
-  // const endpoint = (els.pushEndpointInput.value || state.pushConfig.subscribeEndpoint || 'https://agenda-push-backend.up.railway.app/subscribe').trim();
+  // 3. Endpoint backend Railway reale
+  const endpoint = 'https://agenda-push-backend-production.up.railway.app/subscribe';
 
   if(!publicKey || !endpoint){
     return toast('Config push mancante');
   }
 
-  // 4. Conversione base64 URL -> Uint8Array (come prima)
+  // 4. Conversione base64 URL -> Uint8Array (usa la funzione che hai già)
   const appServerKey = urlBase64ToUint8Array(publicKey);
 
   try{
@@ -291,7 +287,7 @@ async function subscribeToPush(){
       applicationServerKey: appServerKey
     });
 
-    // 6. Salva config in state (utile per futura modifica da UI)
+    // 6. Salva config in state (così la UI può mostrarla/modificarla)
     state.pushConfig = {
       publicKey,
       subscribeEndpoint: endpoint
