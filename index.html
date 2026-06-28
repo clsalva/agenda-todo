@@ -289,27 +289,67 @@ registerSWWithUpdateUI();
       function exportData(){ const payload = JSON.stringify({ appointments: state.appointments, tasks: state.tasks, pushConfig: state.pushConfig, exportedAt: new Date().toISOString() }, null, 2); const blob = new Blob([payload],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`agenda-pwa-backup-${todayISO}.json`; a.click(); URL.revokeObjectURL(a.href); toast('Backup esportato'); }
       function importData(){ try{ const parsed=JSON.parse(els.importArea.value.trim()); state.appointments = Array.isArray(parsed.appointments)?parsed.appointments:[]; state.tasks = Array.isArray(parsed.tasks)?parsed.tasks:[]; if(parsed.pushConfig) state.pushConfig = { ...state.pushConfig, ...parsed.pushConfig }; closeImport(); renderAll(); toast('Backup importato'); } catch { toast('JSON non valido'); } }
 
-      async function subscribeToPush(){
-        if(!swReg) return toast('Service worker non pronto');
-        if(Notification.permission !== 'granted'){ const permission = await Notification.requestPermission(); if(permission !== 'granted') return toast('Permesso notifiche richiesto'); }
-        const publicKey = (els.vapidKeyInput.value || state.pushConfig.publicKey || '').trim();
-        const endpoint = (els.pushEndpointInput.value || state.pushConfig.subscribeEndpoint || '').trim();
-        if(!publicKey || !endpoint) return toast('Inserisci VAPID key ed endpoint');
-        const appServerKey = urlBase64ToUint8Array(publicKey);
-        try{
-          const subscription = await swReg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: appServerKey });
-          state.pushConfig = { publicKey, subscribeEndpoint: endpoint };
-          saveState();
-          const response = await fetch(endpoint,{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ subscription, userAgent: navigator.userAgent }) });
-          if(!response.ok) throw new Error('Subscribe endpoint error');
-          closePush();
-          toast('Push remoto attivato');
-        } catch(err){
-          console.error(err);
-          toast('Push remoto non completato');
-        }
-      }
+async function subscribeToPush(){
+  if(!swReg) return toast('Service worker non pronto');
 
+  // 1. Chiede il permesso notifiche se non è già concesso
+  if(Notification.permission !== 'granted'){
+    const permission = await Notification.requestPermission();
+    if(permission !== 'granted'){
+      return toast('Permesso notifiche richiesto');
+    }
+  }
+
+  // 2. Public VAPID key: qui metti quella che hai configurato su Railway
+  const publicKey = 'BE5ldK1ZSu_1vnXCtrWiBmotgztJ1PfpdPWEyhXiNS8uYvE3DoTvWIKgOZaVzKHGEU32_eNGuUeZzaK3D2kWL4U';
+
+  // 3. Endpoint backend fisso su Railway (puoi adattare il dominio)
+  const endpoint = 'https://agenda-push-backend.up.railway.app/subscribe';
+
+  // Se vuoi lasciare comunque la possibilità di sovrascrivere da UI:
+  // const publicKey = (els.vapidKeyInput.value || state.pushConfig.publicKey || 'BD...').trim();
+  // const endpoint = (els.pushEndpointInput.value || state.pushConfig.subscribeEndpoint || 'https://agenda-push-backend.up.railway.app/subscribe').trim();
+
+  if(!publicKey || !endpoint){
+    return toast('Config push mancante');
+  }
+
+  // 4. Conversione base64 URL -> Uint8Array (come prima)
+  const appServerKey = urlBase64ToUint8Array(publicKey);
+
+  try{
+    // 5. Subscription dal browser
+    const subscription = await swReg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: appServerKey
+    });
+
+    // 6. Salva config in state (utile per futura modifica da UI)
+    state.pushConfig = {
+      publicKey,
+      subscribeEndpoint: endpoint
+    };
+    saveState();
+
+    // 7. Invio della subscription al backend Railway
+    const response = await fetch(endpoint,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        subscription,
+        userAgent: navigator.userAgent
+      })
+    });
+
+    if(!response.ok) throw new Error('Subscribe endpoint error');
+
+    closePush();
+    toast('Push remoto attivato');
+  } catch(err){
+    console.error(err);
+    toast('Push remoto non completato');
+  }
+}
       (function () {
   // seleziona gli span nella barra di stato
   const statusBar = document.querySelector('.status');
