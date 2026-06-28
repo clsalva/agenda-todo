@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v4';
+const CACHE_VERSION = 'v5';
 const CACHE_NAME = `agenda-todo-pwa-${CACHE_VERSION}`;
 const APP_SHELL = [
   './',
@@ -17,6 +17,12 @@ self.addEventListener('install', (event) => {
   );
   // forza il nuovo SW a passare subito allo stato "waiting"
   self.skipWaiting();
+});
+
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting(); // il nuovo SW entra in activate prima[web:103][web:102]
+  }
 });
 
 self.addEventListener('activate', (event) => {
