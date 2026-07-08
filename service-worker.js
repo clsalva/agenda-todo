@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v7';
+const CACHE_VERSION = 'v8';
 const CACHE_NAME = `agenda-todo-pwa-${CACHE_VERSION}`;
 const APP_SHELL = [
   './',
@@ -48,6 +48,30 @@ self.addEventListener('message', (event) => {
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
+
+  const isNavigation =
+    event.request.mode === 'navigate' ||
+    event.request.destination === 'document';
+
+  if (isNavigation) {
+    // Network-first per l'HTML: un refresh normale vede sempre l'ultima
+    // versione pubblicata. Si cade sulla cache SOLO se sei offline.
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          return response;
+        })
+        .catch(() =>
+          caches.match(event.request).then((cached) => cached || caches.match('./index.html'))
+        )
+    );
+    return;
+  }
+
+  // Cache-first per asset statici (icone, manifest, ecc.): cambiano
+  // raramente, ha senso servirli istantaneamente dalla cache.
   event.respondWith(
     caches.match(event.request).then((cached) => {
       return (
