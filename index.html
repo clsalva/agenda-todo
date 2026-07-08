@@ -45,7 +45,7 @@
     <div class="status"><span>9:41</span><span id="statusDate">Sab 27 giu</span></div>
     <header class="topbar">
       <div class="row">
-        <div class="stack"><div class="eyebrow">K TODO LIST v1.0</div><h1 id="screenTitle">Appuntamenti</h1><p class="small" id="screenSubtitle">Agenda offline con notifiche e installazione</p></div>
+        <div class="stack"><div class="eyebrow">K TODO LIST v1.1</div><h1 id="screenTitle">Appuntamenti</h1><p class="small" id="screenSubtitle">Agenda offline con notifiche e installazione</p></div>
         <div class="row">
           <button class="icon-btn" id="themeToggle" aria-label="Tema">◐</button>
           <button class="icon-btn" id="exportBtn" aria-label="Esporta">⇩</button>
@@ -112,6 +112,7 @@
       let deferredPrompt = null;
       let swReg = null;
       const initialState = {
+        lastModified: 0,
         theme: matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
         activeTab: 'appointments', appointmentFilter: 'all', taskFilter: 'all', showCompletedTasks: true, search: '', notificationsEnabled: false,
         pushConfig: { publicKey: '', subscribeEndpoint: '' },
@@ -134,7 +135,7 @@
       };
 
       function loadState(){ try{ const raw = localStorage.getItem(STORAGE_KEY); if(!raw) return initialState; const parsed = JSON.parse(raw); return { ...initialState, ...parsed, pushConfig: { ...initialState.pushConfig, ...(parsed.pushConfig || {}) }, sync: { ...initialState.sync, ...(parsed.sync || {}) }, appointments: parsed.appointments || initialState.appointments, tasks: parsed.tasks || initialState.tasks }; } catch { return initialState; } }
-      function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); scheduleSyncPush(); }
+      function saveState(){ state.lastModified = Date.now(); localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); scheduleSyncPush(); }
       function toast(msg){ els.toast.textContent = msg; els.toast.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(()=>els.toast.classList.remove('show'), 1900); }
       function esc(s=''){ return s.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
       function fmtDate(s){ if(!s) return 'Senza data'; return new Intl.DateTimeFormat('it-IT',{weekday:'short',day:'2-digit',month:'short'}).format(new Date((s.length===10?s+'T12:00:00':s))); }
@@ -328,16 +329,33 @@ registerSWWithUpdateUI();
           if(!res.ok) throw new Error('GET fallita: ' + res.status);
           const json = await res.json();
           const remote = json.data || { appointments: [], tasks: [] };
-          // Se sul backend non c'è ancora nulla, carichiamo noi i dati locali
-          // (prima sincronizzazione da questo dispositivo).
-          if((remote.appointments||[]).length===0 && (remote.tasks||[]).length===0 && (state.appointments.length>0 || state.tasks.length>0)){
+          const remoteUpdatedAtMs = json.updatedAt ? new Date(json.updatedAt).getTime() : 0;
+          const remoteEmpty = (remote.appointments||[]).length===0 && (remote.tasks||[]).length===0;
+          const localEmpty = state.appointments.length===0 && state.tasks.length===0;
+
+          if(remoteEmpty && !localEmpty){
+            // Il backend non ha ancora nulla: carichiamo noi i dati locali
+            // (prima sincronizzazione da questo dispositivo).
             await pushToBackend();
             return;
           }
-          state.appointments = remote.appointments || [];
-          state.tasks = remote.tasks || [];
-          saveState(); renderAll();
-          if(els.syncStatusText) els.syncStatusText.textContent = 'Dati caricati dal backend alle ' + new Date().toLocaleTimeString('it-IT');
+
+          if(remoteUpdatedAtMs > (state.lastModified||0)){
+            // Il backend ha una versione più recente di quella locale
+            // (es. modificata da un altro dispositivo/browser): scarichiamo.
+            state.appointments = remote.appointments || [];
+            state.tasks = remote.tasks || [];
+            state.lastModified = remoteUpdatedAtMs;
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+            renderAll();
+            if(els.syncStatusText) els.syncStatusText.textContent = 'Dati caricati dal backend alle ' + new Date().toLocaleTimeString('it-IT');
+          } else {
+            // I dati locali sono aggiornati almeno quanto quelli sul backend
+            // (es. appena modificati su questo stesso dispositivo): non
+            // sovrascriviamo mai il locale con qualcosa di più vecchio.
+            // Ci assicuriamo però che il backend sia allineato.
+            await pushToBackend();
+          }
         } catch(err){
           console.error('Errore lettura da backend', err);
           if(els.syncStatusText) els.syncStatusText.textContent = 'Impossibile contattare il backend, uso i dati locali.';
