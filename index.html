@@ -498,7 +498,7 @@ async function subscribeToPush(){
       window.addEventListener('appinstalled', ()=>{ deferredPrompt = null; els.installBanner.classList.remove('show'); toast('App installata'); });
       window.addEventListener('keydown', e=>{ if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='n'){ e.preventDefault(); openSheet(state.activeTab==='appointments'?'appointment':'task'); } if(e.key==='Escape'){ closeSheet(); closePush(); } });
 
-      registerSW(); renderAll(); pullFromBackend();
+      renderAll(); pullFromBackend();
       setInterval(()=>{ if(syncConfigured()) pullFromBackend(); }, 120000);
     })();
   </script>
