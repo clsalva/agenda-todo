@@ -4,7 +4,7 @@ Questo pacchetto è già pronto per pubblicare la PWA su GitHub Pages.
 
 ## Contenuto
 - `index.html` — entrypoint GitHub Pages
-- `agenda-todo-pwa.html` — pagina principale della PWA
+- `index.html` — pagina principale della PWA (serve automaticamente come root del sito su GitHub Pages)
 - `manifest.webmanifest` — manifest installabile
 - `service-worker.js` — service worker offline + push listener
 - icone e screenshot PWA

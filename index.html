@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Agenda Todo" />
-  <title>agenda-todo-pwa</title>
+  <title>Agenda Todo</title>
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="apple-touch-icon" href="./icon-192.png" />
   <link rel="preconnect" href="https://api.fontshare.com" />
@@ -35,7 +35,7 @@
     .progress{height:10px;border-radius:999px;background:rgba(10,132,255,.12);overflow:hidden}.progress span{display:block;height:100%;background:linear-gradient(90deg,var(--color-primary),#69b7ff);border-radius:inherit}.calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}.weekday,.day{text-align:center;padding:10px 0;border-radius:14px;font-size:var(--text-sm)}.weekday{font-size:var(--text-xs);font-weight:700;color:var(--color-text-muted)}.day.active{background:var(--color-primary);color:#fff;font-weight:700}.day.dot::after{content:'';display:block;width:6px;height:6px;border-radius:50%;margin:6px auto 0;background:var(--color-primary)}
     .toolbar{display:flex;gap:8px;flex-wrap:wrap}.filter-btn{padding:10px 12px;font-size:var(--text-sm);font-weight:700}.sheet{position:fixed;inset:0;background:rgba(11,14,21,.34);display:none;align-items:flex-end;justify-content:center;padding:16px;z-index:20}.sheet.open{display:flex}.sheet-card{width:min(460px,100%);max-height:88dvh;overflow:auto;background:var(--color-surface-2);border:1px solid var(--color-border);border-radius:28px;padding:18px;box-shadow:var(--shadow-lg);display:grid;gap:14px}
     .field{display:grid;gap:6px}.field label{font-size:var(--text-xs);font-weight:700;color:var(--color-text-muted);letter-spacing:.04em;text-transform:uppercase}.input,.textarea,.select{background:var(--color-surface-offset);border:1px solid var(--color-border);border-radius:16px;padding:13px 14px}.textarea{min-height:84px;resize:vertical}.sheet-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}.empty{padding:24px 18px;text-align:center;color:var(--color-text-muted);background:var(--color-surface-2);border:1px dashed var(--color-border);border-radius:20px}.toast{position:fixed;left:50%;transform:translateX(-50%) translateY(20px);bottom:94px;background:#111827;color:#fff;padding:12px 16px;border-radius:16px;box-shadow:var(--shadow-md);opacity:0;pointer-events:none;transition:all var(--transition);z-index:30}.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-    .install-banner,.notify-banner{display:none;gap:12px;align-items:center}.install-banner.show,.notify-banner.show{display:grid}.banner-actions{display:flex;gap:8px;flex-wrap:wrap}.bottom-nav{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:12px 16px calc(16px + env(safe-area-inset-bottom));border-top:1px solid var(--color-divider);background:color-mix(in srgb,var(--color-surface) 92%,transparent)}.bottom-nav button{display:grid;gap:6px;justify-items:center;color:var(--color-text-faint);font-size:12px}.bottom-nav button.active{color:var(--color-primary);font-weight:700}.fab-wrap{position:fixed;left:50%;transform:translateX(138px);bottom:106px;z-index:15}.fab{width:56px;height:56px;border-radius:20px;background:var(--color-primary);color:#fff;font-size:1.8rem;border-color:transparent;box-shadow:var(--shadow-md)}.hidden{display:none !important}
+    .install-banner,.notify-banner{display:none;gap:12px;align-items:center}.install-banner.show,.notify-banner.show{display:grid}.banner-actions{display:flex;gap:8px;flex-wrap:wrap}.bottom-nav{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:12px 16px calc(16px + env(safe-area-inset-bottom));border-top:1px solid var(--color-divider);background:color-mix(in srgb,var(--color-surface) 92%,transparent)}.bottom-nav button{display:grid;gap:6px;justify-items:center;color:var(--color-text-faint);font-size:12px}.bottom-nav button.active{color:var(--color-primary);font-weight:700}.fab-wrap{position:fixed;left:50%;transform:translateX(138px);bottom:106px;z-index:15}.fab{width:56px;height:56px;border-radius:20px;background:var(--color-primary);color:#fff;font-size:1.8rem;border-color:transparent;box-shadow:var(--shadow-md)}.hidden{display:none !important}
     @media (max-width:420px){.app-shell{padding:10px;border-radius:28px}.phone{border-radius:22px}.grid-2,.sheet-actions{grid-template-columns:1fr}.fab-wrap{transform:translateX(0);left:auto;right:26px}}
   </style>
 </head>
@@ -45,10 +45,9 @@
     <div class="status"><span>9:41</span><span id="statusDate">Sab 27 giu</span></div>
     <header class="topbar">
       <div class="row">
-        <div class="stack"><div class="eyebrow">K TODO LIST v1.1</div><h1 id="screenTitle">Appuntamenti</h1><p class="small" id="screenSubtitle">Agenda offline con notifiche e installazione</p></div>
+        <div class="stack"><div class="eyebrow">K TODO LIST v1.2</div><h1 id="screenTitle">Appuntamenti</h1><p class="small" id="screenSubtitle">Agenda offline con notifiche e installazione</p></div>
         <div class="row">
-          <button class="icon-btn" id="themeToggle" aria-label="Tema">◐</button>
-          <button class="icon-btn" id="exportBtn" aria-label="Esporta">⇩</button>
+          <span class="tiny" id="lastCheckLabel" aria-label="Ultimo controllo backend">Backend: mai controllato</span>
            <button class="icon-btn" id="manualUpdateBtn" aria-label="Aggiorna app">⟳</button>
           <div class="card notify-banner hidden" id="updateBanner">
   <div>
@@ -82,7 +81,7 @@
         <div class="list" id="tasksList"></div>
       </section>
     </main>
-    <nav class="bottom-nav"><button class="active" data-nav="appointments"><span>▣</span><span>Oggi</span></button><button data-nav="tasks"><span>✓</span><span>Task</span></button><button id="openImport"><span>⇪</span><span>Importa</span></button><button id="openPushInfo"><span>🔔</span><span>Push</span></button></nav>
+    <nav class="bottom-nav"><button class="active" data-nav="appointments"><span>▣</span><span>Oggi</span></button><button data-nav="tasks"><span>✓</span><span>Task</span></button><button id="openPushInfo"><span>🔔</span><span>Push</span></button></nav>
   </div></div>
   <div class="fab-wrap"><button class="fab" id="fabButton" aria-label="Aggiungi">+</button></div>
 
@@ -99,7 +98,7 @@
     <div class="sheet-actions"><button type="button" class="action" id="cancelSheet">Annulla</button><button type="submit" class="action primary">Salva</button></div>
   </form></div></div>
 
-  <div class="sheet" id="importSheet"><div class="sheet-card"><div class="row"><div><div class="eyebrow">Importa dati</div><h2>Backup JSON</h2></div><button class="icon-btn" data-close-import>✕</button></div><p class="small">Incolla un JSON esportato per ripristinare il contenuto.</p><textarea id="importArea" class="textarea" placeholder='{"appointments":[],"tasks":[]}'></textarea><div class="sheet-actions"><button class="action" data-close-import>Annulla</button><button class="action primary" id="importBtn">Importa</button></div></div></div>
+
 
   <div class="sheet" id="pushSheet"><div class="sheet-card"><div class="row"><div><div class="eyebrow">Push setup</div><h2>Configurazione notifiche push</h2></div><button class="icon-btn" data-close-push>✕</button></div><p class="small">La PWA include service worker, Notification API e flusso per push subscription. Per ricevere push quando l’app è chiusa serve anche un backend HTTPS con chiavi VAPID e endpoint di invio.[page:3][web:20][web:27]</p><div class="field"><label for="vapidKeyInput">Public VAPID key</label><input class="input" id="vapidKeyInput" placeholder="Incolla la chiave pubblica VAPID" /></div><div class="field"><label for="backendUrlInput">URL backend (Render)</label><input class="input" id="backendUrlInput" placeholder="https://tuo-backend.onrender.com" /></div><div class="field"><label for="appTokenInput">Token app (segreto condiviso)</label><input class="input" id="appTokenInput" type="password" placeholder="Lo stesso APP_TOKEN configurato su Render" /></div><div class="banner-actions"><button class="action" id="savePushConfigBtn">Salva config</button><button class="action primary" id="subscribePushBtn">Attiva push</button></div><div class="banner-actions"><button class="action" id="syncNowBtn">Sincronizza ora</button></div><p class="tiny" id="syncStatusText">Non ancora sincronizzato.</p><p class="tiny">Usa lo stesso URL backend e lo stesso token su ogni browser/dispositivo per vedere la stessa agenda ovunque.</p></div></div>
 
@@ -113,6 +112,7 @@
       let swReg = null;
       const initialState = {
         lastModified: 0,
+        lastBackendCheck: null,
         theme: matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
         activeTab: 'appointments', appointmentFilter: 'all', taskFilter: 'all', showCompletedTasks: true, search: '', notificationsEnabled: false,
         pushConfig: { publicKey: '', subscribeEndpoint: '' },
@@ -131,7 +131,7 @@
       let state = loadState();
       const $ = s => document.querySelector(s), $$ = s => document.querySelectorAll(s);
       const els = {
-        statusDate: $('#statusDate'), title: $('#screenTitle'), subtitle: $('#screenSubtitle'), searchInput: $('#searchInput'), appointmentsPanel: $('#appointmentsPanel'), tasksPanel: $('#tasksPanel'), appointmentsList: $('#appointmentsList'), tasksList: $('#tasksList'), todayAppointments: $('#todayAppointments'), todayMinutes: $('#todayMinutes'), openTasks: $('#openTasks'), doneTasks: $('#doneTasks'), progressBar: $('#progressBar'), calendarGrid: $('#calendarGrid'), toast: $('#toast'), formSheet: $('#formSheet'), itemForm: $('#itemForm'), itemId: $('#itemId'), itemType: $('#itemType'), titleInput: $('#titleInput'), dateInput: $('#dateInput'), timeInput: $('#timeInput'), durationInput: $('#durationInput'), locationInput: $('#locationInput'), dueDateInput: $('#dueDateInput'), priorityInput: $('#priorityInput'), reminderInput: $('#reminderInput'), notesInput: $('#notesInput'), sheetEyebrow: $('#sheetEyebrow'), sheetTitle: $('#sheetTitle'), importSheet: $('#importSheet'), importArea: $('#importArea'), pushSheet: $('#pushSheet'), vapidKeyInput: $('#vapidKeyInput'), backendUrlInput: $('#backendUrlInput'), appTokenInput: $('#appTokenInput'), syncStatusText: $('#syncStatusText'), installBanner: $('#installBanner'), notifyBanner: $('#notifyBanner'), toggleCompletedBtn: $('#toggleCompletedBtn')
+        statusDate: $('#statusDate'), title: $('#screenTitle'), subtitle: $('#screenSubtitle'), searchInput: $('#searchInput'), appointmentsPanel: $('#appointmentsPanel'), tasksPanel: $('#tasksPanel'), appointmentsList: $('#appointmentsList'), tasksList: $('#tasksList'), todayAppointments: $('#todayAppointments'), todayMinutes: $('#todayMinutes'), openTasks: $('#openTasks'), doneTasks: $('#doneTasks'), progressBar: $('#progressBar'), calendarGrid: $('#calendarGrid'), toast: $('#toast'), formSheet: $('#formSheet'), itemForm: $('#itemForm'), itemId: $('#itemId'), itemType: $('#itemType'), titleInput: $('#titleInput'), dateInput: $('#dateInput'), timeInput: $('#timeInput'), durationInput: $('#durationInput'), locationInput: $('#locationInput'), dueDateInput: $('#dueDateInput'), priorityInput: $('#priorityInput'), reminderInput: $('#reminderInput'), notesInput: $('#notesInput'), sheetEyebrow: $('#sheetEyebrow'), sheetTitle: $('#sheetTitle'), lastCheckLabel: $('#lastCheckLabel'), pushSheet: $('#pushSheet'), vapidKeyInput: $('#vapidKeyInput'), backendUrlInput: $('#backendUrlInput'), appTokenInput: $('#appTokenInput'), syncStatusText: $('#syncStatusText'), installBanner: $('#installBanner'), notifyBanner: $('#notifyBanner'), toggleCompletedBtn: $('#toggleCompletedBtn')
       };
 
       function loadState(){ try{ const raw = localStorage.getItem(STORAGE_KEY); if(!raw) return initialState; const parsed = JSON.parse(raw); return { ...initialState, ...parsed, pushConfig: { ...initialState.pushConfig, ...(parsed.pushConfig || {}) }, sync: { ...initialState.sync, ...(parsed.sync || {}) }, appointments: parsed.appointments || initialState.appointments, tasks: parsed.tasks || initialState.tasks }; } catch { return initialState; } }
@@ -216,7 +216,7 @@ registerSWWithUpdateUI();
         els.statusDate.textContent = new Intl.DateTimeFormat('it-IT',{weekday:'short',day:'numeric',month:'short'}).format(new Date());
         const ap = state.activeTab==='appointments';
         els.title.textContent = ap ? 'Oggi' : 'Todo';
-        els.subtitle.textContent = ap ? 'Agenda installabile, offline e notificabile' : 'Task con promemoria, export e supporto push';
+        els.subtitle.textContent = ap ? 'Agenda installabile, offline e notificabile' : 'Task con promemoria e supporto push';
         els.appointmentsPanel.classList.toggle('active', ap); els.tasksPanel.classList.toggle('active', !ap);
         $$('[data-tab]').forEach(b=>b.classList.toggle('active', b.dataset.tab===state.activeTab));
         $$('[data-nav]').forEach(b=>b.classList.toggle('active', b.dataset.nav===state.activeTab));
@@ -239,12 +239,12 @@ registerSWWithUpdateUI();
         els.tasksList.innerHTML = items.length ? items.map(item=>{ const [lab,cls]=priorityBadge(item.priority); return `<article class="item"><div class="task-row ${item.done?'done':''}"><button class="check ${item.done?'done':''}" data-toggle-task="${item.id}"></button><div><h3>${esc(item.title)}</h3><p class="small">${item.dueDate?`Scade ${fmtDate(item.dueDate)}`:'Senza scadenza'}</p></div><span class="badge ${cls}">${lab}</span></div>${item.notes||item.reminderAt?`<div class="meta">${item.notes?`<span class="pill-mini">📝 ${esc(item.notes)}</span>`:''}${item.reminderAt?`<span class="pill-mini">🔔 ${fmtDate(item.reminderAt)}</span>`:''}</div>`:''}<div class="actions"><button class="action" data-edit-task="${item.id}">Modifica</button><button class="action" data-delete-task="${item.id}">Elimina</button><button class="action primary" data-notify-item="task:${item.id}">Notifica</button></div></article>`; }).join('') : '<div class="empty">Nessuna attività da mostrare.</div>';
       }
       function renderCalendar(){ const base=new Date(), y=base.getFullYear(), m=base.getMonth(), labels=['L','M','M','G','V','S','D']; const first=new Date(y,m,1), last=new Date(y,m+1,0), offset=(first.getDay()+6)%7; const activeDays=new Set(state.tasks.filter(t=>t.dueDate&&t.dueDate.startsWith(`${y}-${String(m+1).padStart(2,'0')}`)).map(t=>Number(t.dueDate.slice(-2)))); let html=labels.map(d=>`<div class="weekday">${d}</div>`).join(''); for(let i=0;i<offset;i++) html+='<div class="day"></div>'; for(let day=1;day<=last.getDate();day++){ const iso=`${y}-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`; const cls=iso===todayISO?'active':activeDays.has(day)?'dot':''; html+=`<div class="day ${cls}">${day}</div>`;} els.calendarGrid.innerHTML = html; }
-      function renderAll(){ renderHeader(); renderAppointments(); renderTasks(); renderCalendar(); saveState(); scheduleReminderChecks(); }
+      function renderAll(){ renderHeader(); renderAppointments(); renderTasks(); renderCalendar(); renderLastCheck(); saveState(); scheduleReminderChecks(); }
 
       function openSheet(type,item=null){ $('#itemForm').reset(); els.itemType.value=type; els.itemId.value=item?.id||''; const ap = type==='appointment'; $$('.appointment-only').forEach(el=>el.classList.toggle('hidden',!ap)); $$('.task-only').forEach(el=>el.classList.toggle('hidden',ap)); els.sheetEyebrow.textContent=item?'Modifica elemento':'Nuovo elemento'; els.sheetTitle.textContent=ap?(item?'Modifica appuntamento':'Nuovo appuntamento'):(item?'Modifica task':'Nuovo task'); if(item){ els.titleInput.value=item.title||''; els.notesInput.value=item.notes||''; els.reminderInput.value=item.reminderAt||''; if(ap){ els.dateInput.value=item.date||todayISO; els.timeInput.value=item.time||'09:00'; els.durationInput.value=String(item.duration||30); els.locationInput.value=item.location||''; } else { els.dueDateInput.value=item.dueDate||''; els.priorityInput.value=item.priority||'media'; } } else { els.dateInput.value=todayISO; els.timeInput.value='09:00'; els.durationInput.value='30'; els.dueDateInput.value=todayISO; els.priorityInput.value='media'; }
         els.formSheet.classList.add('open'); }
       function closeSheet(){ els.formSheet.classList.remove('open'); }
-      function openImport(){ els.importSheet.classList.add('open'); } function closeImport(){ els.importSheet.classList.remove('open'); }
+
       function openPush(){ els.vapidKeyInput.value = state.pushConfig.publicKey || ''; els.backendUrlInput.value = state.sync.backendUrl || ''; els.appTokenInput.value = state.sync.appToken || ''; els.pushSheet.classList.add('open'); } function closePush(){ els.pushSheet.classList.remove('open'); }
 
       async function requestNotifications(){
@@ -257,7 +257,7 @@ registerSWWithUpdateUI();
 
       async function testNotification(title='Promemoria Agenda', body='Questa è una notifica di prova.'){
         if(Notification.permission !== 'granted') return toast('Abilita prima le notifiche');
-        if(swReg){ await swReg.showNotification(title,{ body, icon:'./icon-192.png', badge:'./badge-icon.png', tag:'test-notification', data:{ url:'./agenda-todo-pwa.html' } }); }
+        if(swReg){ await swReg.showNotification(title,{ body, icon:'./icon-192.png', badge:'./badge-icon.png', tag:'test-notification', data:{ url:'./index.html' } }); }
         else new Notification(title,{ body });
       }
 
@@ -288,8 +288,14 @@ registerSWWithUpdateUI();
         }, 20000);
       }
 
-      function exportData(){ const payload = JSON.stringify({ appointments: state.appointments, tasks: state.tasks, pushConfig: state.pushConfig, exportedAt: new Date().toISOString() }, null, 2); const blob = new Blob([payload],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`agenda-pwa-backup-${todayISO}.json`; a.click(); URL.revokeObjectURL(a.href); toast('Backup esportato'); }
-      function importData(){ try{ const parsed=JSON.parse(els.importArea.value.trim()); state.appointments = Array.isArray(parsed.appointments)?parsed.appointments:[]; state.tasks = Array.isArray(parsed.tasks)?parsed.tasks:[]; if(parsed.pushConfig) state.pushConfig = { ...state.pushConfig, ...parsed.pushConfig }; closeImport(); renderAll(); toast('Backup importato'); } catch { toast('JSON non valido'); } }
+      function renderLastCheck(){
+        if(!els.lastCheckLabel) return;
+        if(!state.lastBackendCheck){ els.lastCheckLabel.textContent = 'Backend: mai controllato'; return; }
+        const d = new Date(state.lastBackendCheck);
+        const giorno = d.toLocaleDateString('it-IT', { day:'2-digit', month:'2-digit' });
+        const ora = d.toLocaleTimeString('it-IT', { hour:'2-digit', minute:'2-digit' });
+        els.lastCheckLabel.textContent = `Backend: ${giorno} ${ora}`;
+      }
 
       // --- SINCRONIZZAZIONE CON IL BACKEND ---
       // Tutta l'agenda (appuntamenti + task) viene salvata anche sul backend,
@@ -315,6 +321,7 @@ registerSWWithUpdateUI();
           const url = state.sync.backendUrl.replace(/\/$/,'') + '/api/items';
           const res = await fetch(url, { method:'PUT', headers: syncHeaders(), body: JSON.stringify({ appointments: state.appointments, tasks: state.tasks }) });
           if(!res.ok) throw new Error('PUT fallita: ' + res.status);
+          state.lastBackendCheck = Date.now(); renderLastCheck();
           if(els.syncStatusText) els.syncStatusText.textContent = 'Sincronizzato alle ' + new Date().toLocaleTimeString('it-IT');
         } catch(err){
           console.error('Errore sync verso backend', err);
@@ -327,6 +334,7 @@ registerSWWithUpdateUI();
           const url = state.sync.backendUrl.replace(/\/$/,'') + '/api/items';
           const res = await fetch(url, { headers: syncHeaders() });
           if(!res.ok) throw new Error('GET fallita: ' + res.status);
+          state.lastBackendCheck = Date.now(); renderLastCheck();
           const json = await res.json();
           const remote = json.data || { appointments: [], tasks: [] };
           const remoteUpdatedAtMs = json.updatedAt ? new Date(json.updatedAt).getTime() : 0;
@@ -453,8 +461,7 @@ async function subscribeToPush(){
       
       function urlBase64ToUint8Array(base64String){ const padding='='.repeat((4-base64String.length%4)%4); const base64=(base64String+padding).replace(/-/g,'+').replace(/_/g,'/'); const rawData=atob(base64); return Uint8Array.from([...rawData].map(char=>char.charCodeAt(0))); }
 
-      $('#themeToggle').addEventListener('click',()=>{ state.theme = state.theme==='dark'?'light':'dark'; renderAll(); });
-      $('#exportBtn').addEventListener('click',exportData); $('#openImport').addEventListener('click',openImport); $$('[data-close-import]').forEach(b=>b.addEventListener('click',closeImport)); $('#importBtn').addEventListener('click',importData); $('#openPushInfo').addEventListener('click',openPush); $$('[data-close-push]').forEach(b=>b.addEventListener('click',closePush)); $('#savePushConfigBtn').addEventListener('click',()=>{ state.pushConfig={ ...state.pushConfig, publicKey: els.vapidKeyInput.value.trim() }; state.sync={ backendUrl: els.backendUrlInput.value.trim(), appToken: els.appTokenInput.value.trim() }; saveState(); toast('Config salvata'); pullFromBackend(); }); $('#subscribePushBtn').addEventListener('click',subscribeToPush); $('#syncNowBtn') && $('#syncNowBtn').addEventListener('click',async ()=>{ toast('Sincronizzazione...'); await pullFromBackend(); });
+      $('#openPushInfo').addEventListener('click',openPush); $$('[data-close-push]').forEach(b=>b.addEventListener('click',closePush)); $('#savePushConfigBtn').addEventListener('click',()=>{ state.pushConfig={ ...state.pushConfig, publicKey: els.vapidKeyInput.value.trim() }; state.sync={ backendUrl: els.backendUrlInput.value.trim(), appToken: els.appTokenInput.value.trim() }; saveState(); toast('Config salvata'); pullFromBackend(); }); $('#subscribePushBtn').addEventListener('click',subscribeToPush); $('#syncNowBtn') && $('#syncNowBtn').addEventListener('click',async ()=>{ toast('Sincronizzazione...'); await pullFromBackend(); });
       $('#closeSheet').addEventListener('click',closeSheet); $('#cancelSheet').addEventListener('click',closeSheet); $('#addAppointmentTop').addEventListener('click',()=>openSheet('appointment')); $('#addTaskTop').addEventListener('click',()=>openSheet('task')); $('#fabButton').addEventListener('click',()=>openSheet(state.activeTab==='appointments'?'appointment':'task')); $('#toggleCompletedBtn').addEventListener('click',()=>{ state.showCompletedTasks=!state.showCompletedTasks; renderTasks(); saveState(); }); $('#enableNotificationsBtn').addEventListener('click',requestNotifications); $('#testNotificationBtn').addEventListener('click',()=>testNotification());
       $('#installBtn').addEventListener('click', async ()=>{ if(!deferredPrompt) return toast('Installazione guidata non disponibile qui'); deferredPrompt.prompt(); const choice = await deferredPrompt.userChoice; if(choice.outcome==='accepted') els.installBanner.classList.remove('show'); deferredPrompt = null; }); $('#dismissInstall').addEventListener('click',()=>els.installBanner.classList.remove('show'));
       $$('[data-tab]').forEach(b=>b.addEventListener('click',()=>{ state.activeTab=b.dataset.tab; renderHeader(); })); $$('[data-nav]').forEach(b=>b.addEventListener('click',()=>{ state.activeTab=b.dataset.nav; renderHeader(); })); $$('#appointmentFilters [data-filter]').forEach(b=>b.addEventListener('click',()=>{ state.appointmentFilter=b.dataset.filter; renderAppointments(); saveState(); })); $$('#taskFilters [data-filter]').forEach(b=>b.addEventListener('click',()=>{ state.taskFilter=b.dataset.filter; renderTasks(); saveState(); })); $('#searchInput').addEventListener('input',e=>{ state.search=e.target.value.trim(); renderAppointments(); renderTasks(); saveState(); });
@@ -469,14 +476,15 @@ async function subscribeToPush(){
         if(dt){ state.tasks=state.tasks.filter(t=>t.id!==dt.dataset.deleteTask); renderAll(); toast('Task eliminato'); }
         if(tt){ const item=state.tasks.find(t=>t.id===tt.dataset.toggleTask); if(item){ item.done=!item.done; renderAll(); toast(item.done?'Task completato':'Task riaperto'); } }
         if(ni){ const [type,id] = ni.dataset.notifyItem.split(':'); await notifyItem(`${type}:${id}`,id); }
-        if(e.target===els.formSheet) closeSheet(); if(e.target===els.importSheet) closeImport(); if(e.target===els.pushSheet) closePush();
+        if(e.target===els.formSheet) closeSheet(); if(e.target===els.pushSheet) closePush();
       });
 
       window.addEventListener('beforeinstallprompt', e=>{ e.preventDefault(); deferredPrompt = e; els.installBanner.classList.add('show'); });
       window.addEventListener('appinstalled', ()=>{ deferredPrompt = null; els.installBanner.classList.remove('show'); toast('App installata'); });
-      window.addEventListener('keydown', e=>{ if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='n'){ e.preventDefault(); openSheet(state.activeTab==='appointments'?'appointment':'task'); } if(e.key==='Escape'){ closeSheet(); closeImport(); closePush(); } });
+      window.addEventListener('keydown', e=>{ if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='n'){ e.preventDefault(); openSheet(state.activeTab==='appointments'?'appointment':'task'); } if(e.key==='Escape'){ closeSheet(); closePush(); } });
 
       registerSW(); renderAll(); pullFromBackend();
+      setInterval(()=>{ if(syncConfigured()) pullFromBackend(); }, 120000);
     })();
   </script>
 </body>

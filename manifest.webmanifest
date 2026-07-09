@@ -2,7 +2,7 @@
   "name": "Agenda Todo PWA",
   "short_name": "AgendaTodo",
   "description": "Agenda appuntamenti e todo list installabile con supporto offline e notifiche.",
-  "start_url": "./agenda-todo-pwa.html",
+  "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "display_override": ["standalone", "minimal-ui"],
