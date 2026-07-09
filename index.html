@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#0a84ff" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Agenda Todo" />
   <title>Agenda Todo</title>
@@ -257,8 +258,19 @@ registerSWWithUpdateUI();
 
       async function testNotification(title='Promemoria Agenda', body='Questa è una notifica di prova.'){
         if(Notification.permission !== 'granted') return toast('Abilita prima le notifiche');
-        if(swReg){ await swReg.showNotification(title,{ body, icon:'./icon-192.png', badge:'./badge-icon.png', tag:'test-notification', data:{ url:'./index.html' } }); }
-        else new Notification(title,{ body });
+        try{
+          if('serviceWorker' in navigator){
+            const reg = await Promise.race([
+              navigator.serviceWorker.ready,
+              new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000))
+            ]);
+            if(reg && reg.active){
+              await reg.showNotification(title,{ body, icon:'./icon-192.png', badge:'./badge-icon.png', tag:'test-notification', data:{ url:'./index.html' } });
+              return;
+            }
+          }
+        } catch { /* nessun SW attivo entro il timeout: fallback qui sotto */ }
+        new Notification(title,{ body });
       }
 
       async function notifyItem(kind,id){
