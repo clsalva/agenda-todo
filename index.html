@@ -372,8 +372,23 @@ registerSWWithUpdateUI();
 
       //SUBSCRIBE TO PUSH
 async function subscribeToPush(){
-  if(!swReg) return toast('Service worker non pronto');
+  if(!('serviceWorker' in navigator)) return toast('Service worker non supportato dal browser');
   if(!syncConfigured()) return toast('Configura prima URL backend e token');
+
+  // Aspetta che ci sia un service worker davvero ATTIVO (non solo
+  // registrato/in installazione): PushManager.subscribe() fallisce con
+  // "no active Service Worker" se lo chiami troppo presto.
+  toast('Preparazione service worker...');
+  let activeReg;
+  try{
+    activeReg = await Promise.race([
+      navigator.serviceWorker.ready,
+      new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 8000))
+    ]);
+  } catch {
+    return toast('Service worker non ancora pronto, riprova tra qualche secondo');
+  }
+  swReg = activeReg;
 
   // 1. Chiede il permesso notifiche se non è già concesso
   if(Notification.permission !== 'granted'){
