@@ -2,7 +2,7 @@
    Fix: no duplicate message handler, safer cache writes, cache size limits,
    no caching of error responses, robust push payload handling. */
 
-const CACHE_VERSION = 'v11';
+const CACHE_VERSION = 'v12';
 const CACHE_NAME = `agenda-todo-pwa-${CACHE_VERSION}`;
 const MAX_RUNTIME_ITEMS = 60;
 
