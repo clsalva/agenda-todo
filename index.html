@@ -373,24 +373,63 @@ async function pushToBackend(){
 }
 async function pullFromBackend(){
   if(!syncConfigured()) return;
+
   try{
     const url = state.sync.backendUrl.replace(/\/$/,'') + '/api/items';
-    const res = await fetch(url, { headers: { 'x-app-token': state.sync.appToken } });
-    const json = await res.json();
-    if(!res.ok || !json.ok) throw new Error('GET fallita');
-    if(!json.data) return;
-    state.appointments = Array.isArray(json.data.appointments) ? json.data.appointments : [];
-    state.tasks = Array.isArray(json.data.tasks) ? json.data.tasks : [];
-state.lastBackendCheck = Date.now();
-localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 
-renderHeader();
-renderAppointments();
-renderTasks();
-renderCalendar();
-renderLastCheck();
-    if(els.syncStatusText) els.syncStatusText.textContent = 'Aggiornato da backend alle ' + new Date().toLocaleTimeString('it-IT');
-  } catch(err){
+    const res = await fetch(url,{
+      headers:{
+        'x-app-token': state.sync.appToken
+      }
+    });
+
+    const json = await res.json();
+
+    if(!res.ok || !json.ok) {
+      throw new Error('GET fallita');
+    }
+
+    if(!json.data) return;
+
+    // NON sovrascrivere se il backend è più vecchio
+    if(
+      json.updatedAt &&
+      state.lastModified &&
+      new Date(json.updatedAt).getTime() < state.lastModified
+    ){
+      console.log('Pull ignorata: dati locali più recenti');
+      return;
+    }
+
+    state.appointments = json.data.appointments || [];
+    state.tasks = json.data.tasks || [];
+
+    state.lastBackendCheck = Date.now();
+
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify(state)
+    );
+
+    renderHeader();
+    renderAppointments();
+    renderTasks();
+    renderCalendar();
+    renderLastCheck();
+
+    if(els.syncStatusText){
+      els.syncStatusText.textContent =
+        'Aggiornato da backend alle ' +
+        new Date().toLocaleTimeString('it-IT');
+    }
+
+    console.log(
+      'Pull completata',
+      state.appointments.length,
+      state.tasks.length
+    );
+
+  }catch(err){
     console.error('Errore pull da backend', err);
   }
 }
