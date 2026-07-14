@@ -608,8 +608,20 @@ $('#syncNowBtn').addEventListener('click', async ()=>{
       throw new Error('GET backend non valida');
     }
 
+    alert(
+      'BACKEND APPUNTAMENTI:\n' +
+      (json.data.appointments || []).map(x => x.title).join('\n') +
+      '\n\nTODO:\n' +
+      (json.data.tasks || []).map(x => x.title).join('\n')
+    );
+
     state.appointments = Array.isArray(json.data.appointments) ? json.data.appointments : [];
     state.tasks = Array.isArray(json.data.tasks) ? json.data.tasks : [];
+
+    state.activeTab = 'appointments';
+    state.appointmentFilter = 'all';
+    state.taskFilter = 'all';
+    state.search = '';
     state.lastBackendCheck = Date.now();
 
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -620,6 +632,7 @@ $('#syncNowBtn').addEventListener('click', async ()=>{
   }catch(err){
     console.error(err);
     toast('Sync fallita');
+    alert('ERRORE SYNC: ' + err.message);
   }
 });
       
