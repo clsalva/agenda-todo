@@ -569,13 +569,16 @@ $('#savePushConfigBtn').addEventListener('click', async ()=>{
 
   await pullFromBackend();
 });
-      $('#subscribePushBtn').addEventListener('click',subscribeToPush);
-      $('#syncNowBtn') &&
-      $('#syncNowBtn').addEventListener('click', async ()=>{
-     console.log('SYNC NOW CLICK');
-     toast('Sincronizzazione...');
-     await pullFromBackend();
-     toast('Sync completata');
+$('#syncNowBtn') &&
+$('#syncNowBtn').addEventListener('click', async ()=>{
+  alert('CLICK');
+  
+  try {
+    await pullFromBackend();
+    alert('PULL OK');
+  } catch(err) {
+    alert('ERRORE: ' + err.message);
+  }
 });
       $('#closeSheet').addEventListener('click',closeSheet); $('#cancelSheet').addEventListener('click',closeSheet); $('#addAppointmentTop').addEventListener('click',()=>openSheet('appointment')); $('#addTaskTop').addEventListener('click',()=>openSheet('task')); $('#fabButton').addEventListener('click',()=>openSheet(state.activeTab==='appointments'?'appointment':'task')); $('#toggleCompletedBtn').addEventListener('click',()=>{ state.showCompletedTasks=!state.showCompletedTasks; renderTasks(); saveState(); }); $('#enableNotificationsBtn').addEventListener('click',requestNotifications); $('#testNotificationBtn').addEventListener('click',()=>testNotification());
       $('#installBtn').addEventListener('click', async ()=>{ if(!deferredPrompt) return toast('Installazione guidata non disponibile qui'); deferredPrompt.prompt(); const choice = await deferredPrompt.userChoice; if(choice.outcome==='accepted') els.installBanner.classList.remove('show'); deferredPrompt = null; }); $('#dismissInstall').addEventListener('click',()=>els.installBanner.classList.remove('show'));
