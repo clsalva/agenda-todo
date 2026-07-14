@@ -136,7 +136,12 @@
       };
 
       function loadState(){ try{ const raw = localStorage.getItem(STORAGE_KEY); if(!raw) return initialState; const parsed = JSON.parse(raw); return { ...initialState, ...parsed, pushConfig: { ...initialState.pushConfig, ...(parsed.pushConfig || {}) }, sync: { ...initialState.sync, ...(parsed.sync || {}) }, appointments: parsed.appointments || initialState.appointments, tasks: parsed.tasks || initialState.tasks }; } catch { return initialState; } }
-      function saveState(){ state.lastModified = Date.now(); localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); scheduleSyncPush(); }
+      function saveState(){
+  state.lastModified = Date.now();
+  localDirty = true;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  scheduleSyncPush();
+}
       function toast(msg){ els.toast.textContent = msg; els.toast.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(()=>els.toast.classList.remove('show'), 1900); }
       function esc(s=''){ return s.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
       function fmtDate(s){ if(!s) return 'Senza data'; return new Intl.DateTimeFormat('it-IT',{weekday:'short',day:'2-digit',month:'short'}).format(new Date((s.length===10?s+'T12:00:00':s))); }
@@ -343,6 +348,8 @@ async function syncHeadersAsync(){
         return !!(state.sync.backendUrl && state.sync.appToken);
       }
       let syncPushTimer = null;
+      let localDirty = false;
+      let pushInProgress = false;
       function scheduleSyncPush(){
         if(!syncConfigured()) return;
         clearTimeout(syncPushTimer);
@@ -352,32 +359,54 @@ async function syncHeadersAsync(){
       }
 async function pushToBackend(){
   if(!syncConfigured()) return;
+
+  pushInProgress = true;
+
   try{
     const url = state.sync.backendUrl.replace(/\/$/,'') + '/api/items';
-    console.log(
-  'PUSH TO BACKEND',
-  state.appointments.map(x => x.title)
-);  
+
     const res = await fetch(url, {
       method:'PUT',
       headers: await syncHeadersAsync(),
-      body: JSON.stringify({ appointments: state.appointments, tasks: state.tasks })
+      body: JSON.stringify({
+        appointments: state.appointments,
+        tasks: state.tasks
+      })
     });
+
     const json = await res.json().catch(()=>({}));
+
     if(!res.ok) throw new Error('PUT fallita: ' + res.status);
+
     state.lastBackendCheck = Date.now();
+    localDirty = false;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     renderLastCheck();
-    if(els.syncStatusText) els.syncStatusText.textContent = 'Sincronizzato alle ' + new Date().toLocaleTimeString('it-IT');
+
+    if(els.syncStatusText){
+      els.syncStatusText.textContent =
+        'Sincronizzato alle ' + new Date().toLocaleTimeString('it-IT');
+    }
+
     console.log('Sync backend:', json);
-  } catch(err){
+
+  }catch(err){
     console.error('Errore sync verso backend', err);
-    if(els.syncStatusText) els.syncStatusText.textContent = 'Sync fallita, dati salvati solo su questo dispositivo.';
+    if(els.syncStatusText){
+      els.syncStatusText.textContent =
+        'Sync fallita, dati salvati solo su questo dispositivo.';
+    }
+  }finally{
+    pushInProgress = false;
   }
 }
+      
 async function pullFromBackend(){
   if(!syncConfigured()) return;
-
+if(localDirty || pushInProgress){
+  console.log('Pull ignorato: modifiche locali non ancora sincronizzate');
+  return;
+}
   try{
     const url = state.sync.backendUrl.replace(/\/$/,'') + '/api/items';
 
