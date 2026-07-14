@@ -242,7 +242,14 @@ registerSWWithUpdateUI();
         els.tasksList.innerHTML = items.length ? items.map(item=>{ const [lab,cls]=priorityBadge(item.priority); return `<article class="item"><div class="task-row ${item.done?'done':''}"><button class="check ${item.done?'done':''}" data-toggle-task="${item.id}"></button><div><h3>${esc(item.title)}</h3><p class="small">${item.dueDate?`Scade ${fmtDate(item.dueDate)}`:'Senza scadenza'}</p></div><span class="badge ${cls}">${lab}</span></div>${item.notes||item.reminderAt?`<div class="meta">${item.notes?`<span class="pill-mini">📝 ${esc(item.notes)}</span>`:''}${item.reminderAt?`<span class="pill-mini">🔔 ${fmtDate(item.reminderAt)}</span>`:''}</div>`:''}<div class="actions"><button class="action" data-edit-task="${item.id}">Modifica</button><button class="action" data-delete-task="${item.id}">Elimina</button><button class="action primary" data-notify-item="task:${item.id}">Notifica</button></div></article>`; }).join('') : '<div class="empty">Nessuna attività da mostrare.</div>';
       }
       function renderCalendar(){ const base=new Date(), y=base.getFullYear(), m=base.getMonth(), labels=['L','M','M','G','V','S','D']; const first=new Date(y,m,1), last=new Date(y,m+1,0), offset=(first.getDay()+6)%7; const activeDays=new Set(state.tasks.filter(t=>t.dueDate&&t.dueDate.startsWith(`${y}-${String(m+1).padStart(2,'0')}`)).map(t=>Number(t.dueDate.slice(-2)))); let html=labels.map(d=>`<div class="weekday">${d}</div>`).join(''); for(let i=0;i<offset;i++) html+='<div class="day"></div>'; for(let day=1;day<=last.getDate();day++){ const iso=`${y}-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`; const cls=iso===todayISO?'active':activeDays.has(day)?'dot':''; html+=`<div class="day ${cls}">${day}</div>`;} els.calendarGrid.innerHTML = html; }
-      function renderAll(){ renderHeader(); renderAppointments(); renderTasks(); renderCalendar(); renderLastCheck(); saveState(); scheduleReminderChecks(); }
+      function renderAll(){
+  renderHeader();
+  renderAppointments();
+  renderTasks();
+  renderCalendar();
+  renderLastCheck();
+  scheduleReminderChecks();
+}
 
       function openSheet(type,item=null){ $('#itemForm').reset(); els.itemType.value=type; els.itemId.value=item?.id||''; const ap = type==='appointment'; $$('.appointment-only').forEach(el=>el.classList.toggle('hidden',!ap)); $$('.task-only').forEach(el=>el.classList.toggle('hidden',ap)); els.sheetEyebrow.textContent=item?'Modifica elemento':'Nuovo elemento'; els.sheetTitle.textContent=ap?(item?'Modifica appuntamento':'Nuovo appuntamento'):(item?'Modifica task':'Nuovo task'); if(item){ els.titleInput.value=item.title||''; els.notesInput.value=item.notes||''; els.reminderInput.value=toDateTimeLocalValue(item.reminderAt); if(ap){ els.dateInput.value=item.date||todayISO; els.timeInput.value=item.time||'09:00'; els.durationInput.value=String(item.duration||30); els.locationInput.value=item.location||''; } else { els.dueDateInput.value=item.dueDate||''; els.priorityInput.value=item.priority||'media'; } } else { els.dateInput.value=todayISO; els.timeInput.value='09:00'; els.durationInput.value='30'; els.dueDateInput.value=todayISO; els.priorityInput.value='media'; }
         els.formSheet.classList.add('open'); }
@@ -374,10 +381,14 @@ async function pullFromBackend(){
     if(!json.data) return;
     state.appointments = Array.isArray(json.data.appointments) ? json.data.appointments : [];
     state.tasks = Array.isArray(json.data.tasks) ? json.data.tasks : [];
-    state.lastBackendCheck = Date.now();
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    renderAll();
-    renderLastCheck();
+state.lastBackendCheck = Date.now();
+localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+
+renderHeader();
+renderAppointments();
+renderTasks();
+renderCalendar();
+renderLastCheck();
     if(els.syncStatusText) els.syncStatusText.textContent = 'Aggiornato da backend alle ' + new Date().toLocaleTimeString('it-IT');
   } catch(err){
     console.error('Errore pull da backend', err);
@@ -444,7 +455,7 @@ async function subscribeToPush(){
     // Invio della subscription al backend
     const response = await fetch(subscribeUrl,{
       method:'POST',
-      headers: syncHeaders(),
+      headers: await syncHeadersAsync(),
       body: JSON.stringify(subscription)
     });
 
