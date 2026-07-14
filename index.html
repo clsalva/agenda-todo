@@ -550,7 +550,26 @@ async function subscribeToPush(){
       
       function urlBase64ToUint8Array(base64String){ const padding='='.repeat((4-base64String.length%4)%4); const base64=(base64String+padding).replace(/-/g,'+').replace(/_/g,'/'); const rawData=atob(base64); return Uint8Array.from([...rawData].map(char=>char.charCodeAt(0))); }
 
-      $('#openPushInfo').addEventListener('click',openPush); $$('[data-close-push]').forEach(b=>b.addEventListener('click',closePush)); $('#savePushConfigBtn').addEventListener('click',()=>{ state.pushConfig={ ...state.pushConfig, publicKey: els.vapidKeyInput.value.trim() }; state.sync={ backendUrl: els.backendUrlInput.value.trim(), appToken: els.appTokenInput.value.trim() }; saveState(); toast('Config salvata'); pullFromBackend(); }); $('#subscribePushBtn').addEventListener('click',subscribeToPush);
+      $('#openPushInfo').addEventListener('click',openPush); $$('[data-close-push]').forEach(b=>b.addEventListener('click',closePush)); 
+$('#savePushConfigBtn').addEventListener('click', async ()=>{
+  state.pushConfig = {
+    ...state.pushConfig,
+    publicKey: els.vapidKeyInput.value.trim()
+  };
+
+  state.sync = {
+    backendUrl: els.backendUrlInput.value.trim(),
+    appToken: els.appTokenInput.value.trim()
+  };
+
+  // salva SOLO localmente
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+
+  toast('Config salvata');
+
+  await pullFromBackend();
+});
+      $('#subscribePushBtn').addEventListener('click',subscribeToPush);
       $('#syncNowBtn') &&
       $('#syncNowBtn').addEventListener('click', async ()=>{
      console.log('SYNC NOW CLICK');
