@@ -394,45 +394,6 @@ async function pullFromBackend(){
 
     const json = await res.json();
 
-    alert(
-  JSON.stringify(
-    (json.data?.appointments || []).map(x => x.title),
-    null,
-    2
-  )
-);
-
-    console.log(
-  'PULL FROM BACKEND',
-  (json.data?.appointments || []).map(x => x.title)
-);
-
-alert(
-  'APPUNTAMENTI BACKEND: ' +
-  ((json.data?.appointments || []).length)
-);
-    
-    console.log('PULL RESPONSE', json);
-
-    if(!res.ok || !json.ok){
-      throw new Error('GET fallita');
-    }
-
-    if(!json.data){
-      alert('SYNC: json.data assente');
-      return;
-    }
-
-    alert(
-      'APPUNTAMENTI BACKEND: ' +
-      ((json.data.appointments || []).length)
-    );
-
-    console.log(
-      'APPOINTMENTS BACKEND',
-      json.data.appointments
-    );
-
     state.appointments = Array.isArray(json.data.appointments)
       ? json.data.appointments
       : [];
