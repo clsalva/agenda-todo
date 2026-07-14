@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v15';
+const CACHE_VERSION = 'v16';
 const CACHE_NAME = `agenda-todo-pwa-${CACHE_VERSION}`;
 const MAX_RUNTIME_ITEMS = 60;
 
@@ -42,6 +42,15 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+// MAI cacheare API/backend
+if (
+url.hostname === 'agenda-push-backend.onrender.com' ||
+url.pathname.startsWith('/api/')
+) {
+event.respondWith(fetch(event.request));
+return;
+}
   if (event.request.method !== 'GET') return;
   const isNavigation = event.request.mode === 'navigate' || event.request.destination === 'document';
   if (isNavigation) {
