@@ -372,10 +372,15 @@ async function pushToBackend(){
   }
 }
 async function pullFromBackend(){
-  if(!syncConfigured()) return;
+  if(!syncConfigured()) {
+    alert('SYNC: non configurata');
+    return;
+  }
 
   try{
     const url = state.sync.backendUrl.replace(/\/$/,'') + '/api/items';
+
+    console.log('PULL URL', url);
 
     const res = await fetch(url,{
       headers:{
@@ -385,24 +390,34 @@ async function pullFromBackend(){
 
     const json = await res.json();
 
-    if(!res.ok || !json.ok) {
+    console.log('PULL RESPONSE', json);
+
+    if(!res.ok || !json.ok){
       throw new Error('GET fallita');
     }
 
-    if(!json.data) return;
-
-    // NON sovrascrivere se il backend è più vecchio
-    /*if(
-      json.updatedAt &&
-      state.lastModified &&
-      new Date(json.updatedAt).getTime() < state.lastModified
-    ){
-      console.log('Pull ignorata: dati locali più recenti');
+    if(!json.data){
+      alert('SYNC: json.data assente');
       return;
     }
-*/
-    state.appointments = json.data.appointments || [];
-    state.tasks = json.data.tasks || [];
+
+    alert(
+      'APPUNTAMENTI BACKEND: ' +
+      ((json.data.appointments || []).length)
+    );
+
+    console.log(
+      'APPOINTMENTS BACKEND',
+      json.data.appointments
+    );
+
+    state.appointments = Array.isArray(json.data.appointments)
+      ? json.data.appointments
+      : [];
+
+    state.tasks = Array.isArray(json.data.tasks)
+      ? json.data.tasks
+      : [];
 
     state.lastBackendCheck = Date.now();
 
@@ -424,13 +439,14 @@ async function pullFromBackend(){
     }
 
     console.log(
-      'Pull completata',
+      'PULL COMPLETATA',
       state.appointments.length,
       state.tasks.length
     );
 
   }catch(err){
     console.error('Errore pull da backend', err);
+    alert('ERRORE PULL: ' + err.message);
   }
 }
       if('serviceWorker' in navigator){
