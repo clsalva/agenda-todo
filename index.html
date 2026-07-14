@@ -46,7 +46,7 @@
     <div class="status"><span>9:41</span><span id="statusDate">Sab 27 giu</span></div>
     <header class="topbar">
       <div class="row">
-        <div class="stack"><div class="eyebrow">K TODO LIST v1.3</div><h1 id="screenTitle">Appuntamenti</h1><p class="small" id="screenSubtitle">Agenda offline con notifiche</p></div>
+        <div class="stack"><div class="eyebrow">K TODO LIST v1.4</div><h1 id="screenTitle">Appuntamenti</h1><p class="small" id="screenSubtitle">Agenda offline con notifiche</p></div>
         <div class="row">
           <span class="tiny" id="lastCheckLabel" aria-label="Ultimo controllo backend">Backend: mai controllato</span>
            <button class="icon-btn" id="manualUpdateBtn" aria-label="Aggiorna app">⟳</button>
@@ -376,15 +376,10 @@ async function pushToBackend(){
   }
 }
 async function pullFromBackend(){
-  if(!syncConfigured()) {
-    alert('SYNC: non configurata');
-    return;
-  }
+  if(!syncConfigured()) return;
 
   try{
     const url = state.sync.backendUrl.replace(/\/$/,'') + '/api/items';
-
-    console.log('PULL URL', url);
 
     const res = await fetch(url,{
       headers:{
@@ -393,6 +388,12 @@ async function pullFromBackend(){
     });
 
     const json = await res.json();
+
+    if(!res.ok || !json.ok){
+      throw new Error('GET fallita: ' + res.status);
+    }
+
+    if(!json.data) return;
 
     state.appointments = Array.isArray(json.data.appointments)
       ? json.data.appointments
@@ -409,11 +410,7 @@ async function pullFromBackend(){
       JSON.stringify(state)
     );
 
-    renderHeader();
-    renderAppointments();
-    renderTasks();
-    renderCalendar();
-    renderLastCheck();
+    renderAll();
 
     if(els.syncStatusText){
       els.syncStatusText.textContent =
@@ -421,26 +418,28 @@ async function pullFromBackend(){
         new Date().toLocaleTimeString('it-IT');
     }
 
-    console.log(
-      'PULL COMPLETATA',
-      state.appointments.length,
-      state.tasks.length
-    );
-
   }catch(err){
     console.error('Errore pull da backend', err);
-    alert('ERRORE PULL: ' + err.message);
+    if(els.syncStatusText){
+      els.syncStatusText.textContent = 'Sync fallita.';
+    }
   }
 }
-      if('serviceWorker' in navigator){
-  navigator.serviceWorker.addEventListener('message', (event) => {
-    if(event.data?.type === 'PULL_FROM_BACKEND') pullFromBackend();
+
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.addEventListener('message', event=>{
+    if(event.data?.type === 'PULL_FROM_BACKEND'){
+      pullFromBackend();
+    }
   });
 }
 
-window.addEventListener('online', () => pullFromBackend());
-document.addEventListener('visibilitychange', () => {
-  if(document.visibilityState === 'visible') pullFromBackend();
+window.addEventListener('online', ()=>pullFromBackend());
+
+document.addEventListener('visibilitychange', ()=>{
+  if(document.visibilityState === 'visible'){
+    pullFromBackend();
+  }
 });
 
       //SUBSCRIBE TO PUSH
@@ -567,17 +566,10 @@ $('#savePushConfigBtn').addEventListener('click', async ()=>{
   toast('Config salvata');
 
   await pullFromBackend();
-});
-$('#syncNowBtn') &&
+});$('#syncNowBtn') &&
 $('#syncNowBtn').addEventListener('click', async ()=>{
-  alert('CLICK');
-  
-  try {
-    await pullFromBackend();
-    alert('PULL OK');
-  } catch(err) {
-    alert('ERRORE: ' + err.message);
-  }
+  toast('Sincronizzazione...');
+  await pullFromBackend();
 });
       $('#closeSheet').addEventListener('click',closeSheet); $('#cancelSheet').addEventListener('click',closeSheet); $('#addAppointmentTop').addEventListener('click',()=>openSheet('appointment')); $('#addTaskTop').addEventListener('click',()=>openSheet('task')); $('#fabButton').addEventListener('click',()=>openSheet(state.activeTab==='appointments'?'appointment':'task')); $('#toggleCompletedBtn').addEventListener('click',()=>{ state.showCompletedTasks=!state.showCompletedTasks; renderTasks(); saveState(); }); $('#enableNotificationsBtn').addEventListener('click',requestNotifications); $('#testNotificationBtn').addEventListener('click',()=>testNotification());
       $('#installBtn').addEventListener('click', async ()=>{ if(!deferredPrompt) return toast('Installazione guidata non disponibile qui'); deferredPrompt.prompt(); const choice = await deferredPrompt.userChoice; if(choice.outcome==='accepted') els.installBanner.classList.remove('show'); deferredPrompt = null; }); $('#dismissInstall').addEventListener('click',()=>els.installBanner.classList.remove('show'));
