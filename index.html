@@ -401,19 +401,19 @@ async function pushToBackend(){
   }
 }
       
-async function pullFromBackend(){
+async function pullFromBackend(force = false){
   if(!syncConfigured()) return;
-if(localDirty || pushInProgress){
-  console.log('Pull ignorato: modifiche locali non ancora sincronizzate');
-  return;
-}
+
+  if(!force && (localDirty || pushInProgress)){
+    console.log('Pull ignorato: modifiche locali non ancora sincronizzate');
+    return;
+  }
+
   try{
     const url = state.sync.backendUrl.replace(/\/$/,'') + '/api/items';
 
     const res = await fetch(url,{
-      headers:{
-        'x-app-token': state.sync.appToken
-      }
+      headers:{ 'x-app-token': state.sync.appToken }
     });
 
     const json = await res.json();
@@ -424,34 +424,25 @@ if(localDirty || pushInProgress){
 
     if(!json.data) return;
 
-    state.appointments = Array.isArray(json.data.appointments)
-      ? json.data.appointments
-      : [];
-
-    state.tasks = Array.isArray(json.data.tasks)
-      ? json.data.tasks
-      : [];
+    state.appointments = Array.isArray(json.data.appointments) ? json.data.appointments : [];
+    state.tasks = Array.isArray(json.data.tasks) ? json.data.tasks : [];
 
     state.lastBackendCheck = Date.now();
+    localDirty = false;
+    pushInProgress = false;
 
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(state)
-    );
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 
     renderAll();
 
     if(els.syncStatusText){
       els.syncStatusText.textContent =
-        'Aggiornato da backend alle ' +
-        new Date().toLocaleTimeString('it-IT');
+        'Aggiornato da backend alle ' + new Date().toLocaleTimeString('it-IT');
     }
 
   }catch(err){
     console.error('Errore pull da backend', err);
-    if(els.syncStatusText){
-      els.syncStatusText.textContent = 'Sync fallita.';
-    }
+    if(els.syncStatusText) els.syncStatusText.textContent = 'Sync fallita.';
   }
 }
 
@@ -595,11 +586,17 @@ $('#savePushConfigBtn').addEventListener('click', async ()=>{
   toast('Config salvata');
 
   await pullFromBackend();
-});$('#syncNowBtn') &&
+              });
+      $('#syncNowBtn') &&
+2
 $('#syncNowBtn').addEventListener('click', async ()=>{
-  toast('Sincronizzazione...');
-  await pullFromBackend();
+3
+toast('Sincronizzazione forzata...');
+4
+await pullFromBackend(true);
+5
 });
+      
       $('#closeSheet').addEventListener('click',closeSheet); $('#cancelSheet').addEventListener('click',closeSheet); $('#addAppointmentTop').addEventListener('click',()=>openSheet('appointment')); $('#addTaskTop').addEventListener('click',()=>openSheet('task')); $('#fabButton').addEventListener('click',()=>openSheet(state.activeTab==='appointments'?'appointment':'task')); $('#toggleCompletedBtn').addEventListener('click',()=>{ state.showCompletedTasks=!state.showCompletedTasks; renderTasks(); saveState(); }); $('#enableNotificationsBtn').addEventListener('click',requestNotifications); $('#testNotificationBtn').addEventListener('click',()=>testNotification());
       $('#installBtn').addEventListener('click', async ()=>{ if(!deferredPrompt) return toast('Installazione guidata non disponibile qui'); deferredPrompt.prompt(); const choice = await deferredPrompt.userChoice; if(choice.outcome==='accepted') els.installBanner.classList.remove('show'); deferredPrompt = null; }); $('#dismissInstall').addEventListener('click',()=>els.installBanner.classList.remove('show'));
       $$('[data-tab]').forEach(b=>b.addEventListener('click',()=>{ state.activeTab=b.dataset.tab; renderHeader(); })); $$('[data-nav]').forEach(b=>b.addEventListener('click',()=>{ state.activeTab=b.dataset.nav; renderHeader(); })); $$('#appointmentFilters [data-filter]').forEach(b=>b.addEventListener('click',()=>{ state.appointmentFilter=b.dataset.filter; renderAppointments(); saveState(); })); $$('#taskFilters [data-filter]').forEach(b=>b.addEventListener('click',()=>{ state.taskFilter=b.dataset.filter; renderTasks(); saveState(); })); $('#searchInput').addEventListener('input',e=>{ state.search=e.target.value.trim(); renderAppointments(); renderTasks(); saveState(); });
