@@ -580,10 +580,28 @@ $('#syncNowBtn').addEventListener('click', async ()=>{
       document.addEventListener('click', async e=>{
         const ea=e.target.closest('[data-edit-appointment]'), da=e.target.closest('[data-delete-appointment]'), et=e.target.closest('[data-edit-task]'), dt=e.target.closest('[data-delete-task]'), tt=e.target.closest('[data-toggle-task]'), ni=e.target.closest('[data-notify-item]');
         if(ea){ const item=state.appointments.find(a=>a.id===ea.dataset.editAppointment); if(item) openSheet('appointment',item); }
-        if(da){ state.appointments=state.appointments.filter(a=>a.id!==da.dataset.deleteAppointment); renderAll(); toast('Appuntamento eliminato'); }
+        if(da){
+  state.appointments = state.appointments.filter(a=>a.id!==da.dataset.deleteAppointment);
+  saveState();
+  renderAll();
+  toast('Appuntamento eliminato');
+}
         if(et){ const item=state.tasks.find(t=>t.id===et.dataset.editTask); if(item) openSheet('task',item); }
-        if(dt){ state.tasks=state.tasks.filter(t=>t.id!==dt.dataset.deleteTask); renderAll(); toast('Task eliminato'); }
-        if(tt){ const item=state.tasks.find(t=>t.id===tt.dataset.toggleTask); if(item){ item.done=!item.done; renderAll(); toast(item.done?'Task completato':'Task riaperto'); } }
+        if(dt){
+  state.tasks = state.tasks.filter(t=>t.id!==dt.dataset.deleteTask);
+  saveState();
+  renderAll();
+  toast('Task eliminato');
+}
+        if(tt){
+  const item = state.tasks.find(t=>t.id===tt.dataset.toggleTask);
+  if(item){
+    item.done = !item.done;
+    saveState();
+    renderAll();
+    toast(item.done?'Task completato':'Task riaperto');
+  }
+}
         if(ni){ const [type,id] = ni.dataset.notifyItem.split(':'); await notifyItem(`${type}:${id}`,id); }
         if(e.target===els.formSheet) closeSheet(); if(e.target===els.pushSheet) closePush();
       });
