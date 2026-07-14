@@ -392,7 +392,7 @@ async function pullFromBackend(){
     if(!json.data) return;
 
     // NON sovrascrivere se il backend è più vecchio
-    if(
+    /*if(
       json.updatedAt &&
       state.lastModified &&
       new Date(json.updatedAt).getTime() < state.lastModified
@@ -400,7 +400,7 @@ async function pullFromBackend(){
       console.log('Pull ignorata: dati locali più recenti');
       return;
     }
-
+*/
     state.appointments = json.data.appointments || [];
     state.tasks = json.data.tasks || [];
 
