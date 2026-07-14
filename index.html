@@ -588,13 +588,9 @@ $('#savePushConfigBtn').addEventListener('click', async ()=>{
   await pullFromBackend();
               });
       $('#syncNowBtn') &&
-2
 $('#syncNowBtn').addEventListener('click', async ()=>{
-3
 toast('Sincronizzazione forzata...');
-4
 await pullFromBackend(true);
-5
 });
       
       $('#closeSheet').addEventListener('click',closeSheet); $('#cancelSheet').addEventListener('click',closeSheet); $('#addAppointmentTop').addEventListener('click',()=>openSheet('appointment')); $('#addTaskTop').addEventListener('click',()=>openSheet('task')); $('#fabButton').addEventListener('click',()=>openSheet(state.activeTab==='appointments'?'appointment':'task')); $('#toggleCompletedBtn').addEventListener('click',()=>{ state.showCompletedTasks=!state.showCompletedTasks; renderTasks(); saveState(); }); $('#enableNotificationsBtn').addEventListener('click',requestNotifications); $('#testNotificationBtn').addEventListener('click',()=>testNotification());
