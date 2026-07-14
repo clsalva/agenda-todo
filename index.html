@@ -315,9 +315,23 @@ registerSWWithUpdateUI();
       // Tutta l'agenda (appuntamenti + task) viene salvata anche sul backend,
       // identificata dal token condiviso. Stesso URL + stesso token su un
       // altro browser = stessa agenda.
-      function syncHeaders(){
-        return { 'Content-Type':'application/json', 'x-app-token': state.sync.appToken || '' };
-      }
+      
+async function getCurrentPushEndpoint(){
+  if(!('serviceWorker' in navigator) || !('PushManager' in window)) return '';
+  const reg = await navigator.serviceWorker.ready;
+  const sub = await reg.pushManager.getSubscription();
+  return sub?.endpoint || '';
+}
+
+async function syncHeadersAsync(){
+  const headers = {
+    'Content-Type': 'application/json',
+    'x-app-token': state.sync.appToken
+  };
+  const endpoint = await getCurrentPushEndpoint();
+  if(endpoint) headers['x-source-endpoint'] = endpoint;
+  return headers;
+}
       function syncConfigured(){
         return !!(state.sync.backendUrl && state.sync.appToken);
       }
@@ -329,60 +343,56 @@ registerSWWithUpdateUI();
         // spammare il backend ad ogni singola battuta/click
         syncPushTimer = setTimeout(pushToBackend, 1500);
       }
-      async function pushToBackend(){
-        if(!syncConfigured()) return;
-        try{
-          const url = state.sync.backendUrl.replace(/\/$/,'') + '/api/items';
-          const res = await fetch(url, { method:'PUT', headers: syncHeaders(), body: JSON.stringify({ appointments: state.appointments, tasks: state.tasks }) });
-          if(!res.ok) throw new Error('PUT fallita: ' + res.status);
-          state.lastBackendCheck = Date.now(); renderLastCheck();
-          if(els.syncStatusText) els.syncStatusText.textContent = 'Sincronizzato alle ' + new Date().toLocaleTimeString('it-IT');
-        } catch(err){
-          console.error('Errore sync verso backend', err);
-          if(els.syncStatusText) els.syncStatusText.textContent = 'Sync fallita, dati salvati solo su questo dispositivo.';
-        }
-      }
-      async function pullFromBackend(){
-        if(!syncConfigured()) return;
-        try{
-          const url = state.sync.backendUrl.replace(/\/$/,'') + '/api/items';
-          const res = await fetch(url, { headers: syncHeaders() });
-          if(!res.ok) throw new Error('GET fallita: ' + res.status);
-          state.lastBackendCheck = Date.now(); renderLastCheck();
-          const json = await res.json();
-          const remote = json.data || { appointments: [], tasks: [] };
-          const remoteUpdatedAtMs = json.updatedAt ? new Date(json.updatedAt).getTime() : 0;
-          const remoteEmpty = (remote.appointments||[]).length===0 && (remote.tasks||[]).length===0;
-          const localEmpty = state.appointments.length===0 && state.tasks.length===0;
+async function pushToBackend(){
+  if(!syncConfigured()) return;
+  try{
+    const url = state.sync.backendUrl.replace(/\/$/,'') + '/api/items';
+    const res = await fetch(url, {
+      method:'PUT',
+      headers: await syncHeadersAsync(),
+      body: JSON.stringify({ appointments: state.appointments, tasks: state.tasks })
+    });
+    const json = await res.json().catch(()=>({}));
+    if(!res.ok) throw new Error('PUT fallita: ' + res.status);
+    state.lastBackendCheck = Date.now();
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    renderLastCheck();
+    if(els.syncStatusText) els.syncStatusText.textContent = 'Sincronizzato alle ' + new Date().toLocaleTimeString('it-IT');
+    console.log('Sync backend:', json);
+  } catch(err){
+    console.error('Errore sync verso backend', err);
+    if(els.syncStatusText) els.syncStatusText.textContent = 'Sync fallita, dati salvati solo su questo dispositivo.';
+  }
+}
+async function pullFromBackend(){
+  if(!syncConfigured()) return;
+  try{
+    const url = state.sync.backendUrl.replace(/\/$/,'') + '/api/items';
+    const res = await fetch(url, { headers: { 'x-app-token': state.sync.appToken } });
+    const json = await res.json();
+    if(!res.ok || !json.ok) throw new Error('GET fallita');
+    if(!json.data) return;
+    state.appointments = Array.isArray(json.data.appointments) ? json.data.appointments : [];
+    state.tasks = Array.isArray(json.data.tasks) ? json.data.tasks : [];
+    state.lastBackendCheck = Date.now();
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    renderAll();
+    renderLastCheck();
+    if(els.syncStatusText) els.syncStatusText.textContent = 'Aggiornato da backend alle ' + new Date().toLocaleTimeString('it-IT');
+  } catch(err){
+    console.error('Errore pull da backend', err);
+  }
+}
+      if('serviceWorker' in navigator){
+  navigator.serviceWorker.addEventListener('message', (event) => {
+    if(event.data?.type === 'PULL_FROM_BACKEND') pullFromBackend();
+  });
+}
 
-          if(remoteEmpty && !localEmpty){
-            // Il backend non ha ancora nulla: carichiamo noi i dati locali
-            // (prima sincronizzazione da questo dispositivo).
-            await pushToBackend();
-            return;
-          }
-
-          if(remoteUpdatedAtMs > (state.lastModified||0)){
-            // Il backend ha una versione più recente di quella locale
-            // (es. modificata da un altro dispositivo/browser): scarichiamo.
-            state.appointments = remote.appointments || [];
-            state.tasks = remote.tasks || [];
-            state.lastModified = remoteUpdatedAtMs;
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-            renderAll();
-            if(els.syncStatusText) els.syncStatusText.textContent = 'Dati caricati dal backend alle ' + new Date().toLocaleTimeString('it-IT');
-          } else {
-            // I dati locali sono aggiornati almeno quanto quelli sul backend
-            // (es. appena modificati su questo stesso dispositivo): non
-            // sovrascriviamo mai il locale con qualcosa di più vecchio.
-            // Ci assicuriamo però che il backend sia allineato.
-            await pushToBackend();
-          }
-        } catch(err){
-          console.error('Errore lettura da backend', err);
-          if(els.syncStatusText) els.syncStatusText.textContent = 'Impossibile contattare il backend, uso i dati locali.';
-        }
-      }
+window.addEventListener('online', () => pullFromBackend());
+document.addEventListener('visibilitychange', () => {
+  if(document.visibilityState === 'visible') pullFromBackend();
+});
 
       //SUBSCRIBE TO PUSH
 async function subscribeToPush(){
