@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v14';
+const CACHE_VERSION = 'v15';
 const CACHE_NAME = `agenda-todo-pwa-${CACHE_VERSION}`;
 const MAX_RUNTIME_ITEMS = 60;
 
