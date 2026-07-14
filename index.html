@@ -354,6 +354,10 @@ async function pushToBackend(){
   if(!syncConfigured()) return;
   try{
     const url = state.sync.backendUrl.replace(/\/$/,'') + '/api/items';
+    console.log(
+  'PUSH TO BACKEND',
+  state.appointments.map(x => x.title)
+);  
     const res = await fetch(url, {
       method:'PUT',
       headers: await syncHeadersAsync(),
@@ -390,6 +394,16 @@ async function pullFromBackend(){
 
     const json = await res.json();
 
+console.log(
+  'PULL FROM BACKEND',
+  (json.data?.appointments || []).map(x => x.title)
+);
+
+alert(
+  'APPUNTAMENTI BACKEND: ' +
+  ((json.data?.appointments || []).length)
+);
+    
     console.log('PULL RESPONSE', json);
 
     if(!res.ok || !json.ok){
