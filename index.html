@@ -394,7 +394,15 @@ async function pullFromBackend(){
 
     const json = await res.json();
 
-console.log(
+    alert(
+  JSON.stringify(
+    (json.data?.appointments || []).map(x => x.title),
+    null,
+    2
+  )
+);
+
+    console.log(
   'PULL FROM BACKEND',
   (json.data?.appointments || []).map(x => x.title)
 );
