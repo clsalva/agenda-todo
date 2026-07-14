@@ -587,10 +587,40 @@ $('#savePushConfigBtn').addEventListener('click', async ()=>{
 
   await pullFromBackend();
               });
-      $('#syncNowBtn') &&
+$('#syncNowBtn') &&
 $('#syncNowBtn').addEventListener('click', async ()=>{
-toast('Sincronizzazione forzata...');
-await pullFromBackend(true);
+  toast('Ripristino da backend...');
+
+  localDirty = false;
+  pushInProgress = false;
+  clearTimeout(syncPushTimer);
+
+  try{
+    const url = state.sync.backendUrl.replace(/\/$/,'') + '/api/items';
+
+    const res = await fetch(url,{
+      headers:{ 'x-app-token': state.sync.appToken }
+    });
+
+    const json = await res.json();
+
+    if(!res.ok || !json.ok || !json.data){
+      throw new Error('GET backend non valida');
+    }
+
+    state.appointments = Array.isArray(json.data.appointments) ? json.data.appointments : [];
+    state.tasks = Array.isArray(json.data.tasks) ? json.data.tasks : [];
+    state.lastBackendCheck = Date.now();
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+
+    renderAll();
+    toast('Allineato al backend');
+
+  }catch(err){
+    console.error(err);
+    toast('Sync fallita');
+  }
 });
       
       $('#closeSheet').addEventListener('click',closeSheet); $('#cancelSheet').addEventListener('click',closeSheet); $('#addAppointmentTop').addEventListener('click',()=>openSheet('appointment')); $('#addTaskTop').addEventListener('click',()=>openSheet('task')); $('#fabButton').addEventListener('click',()=>openSheet(state.activeTab==='appointments'?'appointment':'task')); $('#toggleCompletedBtn').addEventListener('click',()=>{ state.showCompletedTasks=!state.showCompletedTasks; renderTasks(); saveState(); }); $('#enableNotificationsBtn').addEventListener('click',requestNotifications); $('#testNotificationBtn').addEventListener('click',()=>testNotification());
