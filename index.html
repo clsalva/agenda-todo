@@ -278,6 +278,38 @@ registerSWWithUpdateUI();
     toast('Invito non valido');
   }
 } 
+
+    //INSERIMENTO FUNZIONE INVITO UTENTI
+      async function applyInviteFromUrl(){
+  const params = new URLSearchParams(location.search);
+  const token = params.get('invite');
+  if(!token) return;
+
+  try{
+    const backendUrl = 'https://agenda-push-backend.onrender.com';
+    const res = await fetch(`${backendUrl}/api/bootstrap?token=${encodeURIComponent(token)}`);
+    const json = await res.json();
+    if(!res.ok || !json.ok) throw new Error(json.error || 'Invito non valido');
+
+    state.sync = {
+      backendUrl: json.config.backendUrl,
+      appToken: json.config.appToken
+    };
+    state.pushConfig = {
+      ...state.pushConfig,
+      publicKey: json.config.publicVapidKey || '',
+      subscribeEndpoint: json.config.backendUrl.replace(/\/$/,'') + '/api/subscribe'
+    };
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    history.replaceState({}, document.title, location.pathname);
+    toast('Configurazione invito applicata');
+    await pullFromBackend(true);
+  }catch(err){
+    console.error('Errore invito', err);
+    toast('Invito non valido');
+  }
+}
       function renderAll(){
   renderHeader();
   renderAppointments();
