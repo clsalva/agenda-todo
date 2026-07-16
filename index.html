@@ -247,6 +247,37 @@ registerSWWithUpdateUI();
         els.tasksList.innerHTML = items.length ? items.map(item=>{ const [lab,cls]=priorityBadge(item.priority); return `<article class="item"><div class="task-row ${item.done?'done':''}"><button class="check ${item.done?'done':''}" data-toggle-task="${item.id}"></button><div><h3>${esc(item.title)}</h3><p class="small">${item.dueDate?`Scade ${fmtDate(item.dueDate)}`:'Senza scadenza'}</p></div><span class="badge ${cls}">${lab}</span></div>${item.notes||item.reminderAt?`<div class="meta">${item.notes?`<span class="pill-mini">📝 ${esc(item.notes)}</span>`:''}${item.reminderAt?`<span class="pill-mini">🔔 ${fmtDate(item.reminderAt)}</span>`:''}</div>`:''}<div class="actions"><button class="action" data-edit-task="${item.id}">Modifica</button><button class="action" data-delete-task="${item.id}">Elimina</button><button class="action primary" data-notify-item="task:${item.id}">Notifica</button></div></article>`; }).join('') : '<div class="empty">Nessuna attività da mostrare.</div>';
       }
       function renderCalendar(){ const base=new Date(), y=base.getFullYear(), m=base.getMonth(), labels=['L','M','M','G','V','S','D']; const first=new Date(y,m,1), last=new Date(y,m+1,0), offset=(first.getDay()+6)%7; const activeDays=new Set(state.tasks.filter(t=>t.dueDate&&t.dueDate.startsWith(`${y}-${String(m+1).padStart(2,'0')}`)).map(t=>Number(t.dueDate.slice(-2)))); let html=labels.map(d=>`<div class="weekday">${d}</div>`).join(''); for(let i=0;i<offset;i++) html+='<div class="day"></div>'; for(let day=1;day<=last.getDate();day++){ const iso=`${y}-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`; const cls=iso===todayISO?'active':activeDays.has(day)?'dot':''; html+=`<div class="day ${cls}">${day}</div>`;} els.calendarGrid.innerHTML = html; }
+//INSERIMENTO FUNZIONI PER MULTIUTENTE
+     async function applyInviteFromUrl(){
+  const params = new URLSearchParams(location.search);
+  const token = params.get('invite');
+  if(!token) return;
+
+  try{
+    const backendUrl = 'https://agenda-push-backend.onrender.com';
+    const res = await fetch(`${backendUrl}/api/bootstrap?token=${encodeURIComponent(token)}`);
+    const json = await res.json();
+    if(!res.ok || !json.ok) throw new Error(json.error || 'Invito non valido');
+
+    state.sync = {
+      backendUrl: json.config.backendUrl,
+      appToken: json.config.appToken
+    };
+    state.pushConfig = {
+      ...state.pushConfig,
+      publicKey: json.config.publicVapidKey || '',
+      subscribeEndpoint: json.config.backendUrl.replace(/\/$/,'') + '/api/subscribe'
+    };
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    history.replaceState({}, document.title, location.pathname);
+    toast('Configurazione invito applicata');
+    await pullFromBackend(true);
+  }catch(err){
+    console.error('Errore invito', err);
+    toast('Invito non valido');
+  }
+} 
       function renderAll(){
   renderHeader();
   renderAppointments();
@@ -675,7 +706,9 @@ $('#syncNowBtn').addEventListener('click', async ()=>{
       window.addEventListener('appinstalled', ()=>{ deferredPrompt = null; els.installBanner.classList.remove('show'); toast('App installata'); });
       window.addEventListener('keydown', e=>{ if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='n'){ e.preventDefault(); openSheet(state.activeTab==='appointments'?'appointment':'task'); } if(e.key==='Escape'){ closeSheet(); closePush(); } });
 
-      renderAll(); pullFromBackend();
+renderAll();
+applyInviteFromUrl().then(() => pullFromBackend(true));
+
       setInterval(()=>{ if(syncConfigured()) pullFromBackend(); }, 120000);
     })();
   </script>
